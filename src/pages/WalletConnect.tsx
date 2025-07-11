@@ -1,17 +1,15 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { useWeb3 } from '@/components/providers/Web3Provider';
+import { useWallet } from '@/hooks/useWallet';
 import { 
   Wallet, 
   Shield, 
   ArrowLeft, 
   CheckCircle, 
-  AlertTriangle,
   ExternalLink,
   Chrome,
   Smartphone
@@ -19,7 +17,7 @@ import {
 
 const WalletConnect = () => {
   const navigate = useNavigate();
-  const { isConnected, account, connectWallet, isLoading } = useWeb3();
+  const { isConnected, account, connectWallet, isLoading } = useWallet();
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
 
   const walletOptions = [
