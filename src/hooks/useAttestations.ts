@@ -1,5 +1,6 @@
 
 import { useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
+import { CONTRACT_ADDRESS } from '@/constants/blockchain';
 
 // Placeholder ABI - você pode substituir pelo ABI real do seu contrato
 const ATTESTATION_ABI = [
@@ -31,9 +32,6 @@ const ATTESTATION_ABI = [
     type: 'function'
   }
 ] as const;
-
-// Substitua pelo endereço real do seu contrato
-const CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000' as `0x${string}`;
 
 export const useCreateAttestation = () => {
   const { data: hash, error, isPending, writeContract } = useWriteContract();

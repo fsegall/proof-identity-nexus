@@ -1,5 +1,6 @@
 
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { CONTRACT_ADDRESSES } from '@/constants/blockchain';
 
 // Placeholder ABI para NFT - substitua pelo ABI real do seu contrato
 const IDENTITY_NFT_ABI = [
@@ -15,9 +16,6 @@ const IDENTITY_NFT_ABI = [
   }
 ] as const;
 
-// Substitua pelo endereço real do seu contrato NFT
-const NFT_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000' as `0x${string}`;
-
 interface UseMintParams {
   address: `0x${string}`;
   tokenURI: string;
@@ -28,7 +26,7 @@ export function useIdentityNFTMint({ address, tokenURI }: UseMintParams) {
 
   const mint = () => {
     writeContract({
-      address: NFT_CONTRACT_ADDRESS,
+      address: CONTRACT_ADDRESSES.IDENTITY_NFT,
       abi: IDENTITY_NFT_ABI,
       functionName: 'mint',
       args: [address, tokenURI],
