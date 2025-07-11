@@ -1,5 +1,6 @@
 
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { foundry } from 'wagmi/chains';
 import { CONTRACT_ADDRESSES } from '@/constants/blockchain';
 
 // Placeholder ABI para NFT - substitua pelo ABI real do seu contrato
@@ -31,6 +32,7 @@ export function useIdentityNFTMint({ address, tokenURI }: UseMintParams) {
       functionName: 'mint',
       args: [address, tokenURI],
       account: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as `0x${string}`,
+      chain: foundry,
     });
   };
 

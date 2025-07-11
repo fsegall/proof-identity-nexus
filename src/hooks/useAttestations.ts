@@ -1,5 +1,6 @@
 
 import { useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
+import { foundry } from 'wagmi/chains';
 import { CONTRACT_ADDRESS } from '@/constants/blockchain';
 
 // Placeholder ABI - você pode substituir pelo ABI real do seu contrato
@@ -44,6 +45,7 @@ export const useCreateAttestation = () => {
       functionName: 'createAttestation',
       args: [dataHash, attestationType],
       account: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as `0x${string}`,
+      chain: foundry,
     });
   };
 
