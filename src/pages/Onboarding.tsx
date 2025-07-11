@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -11,6 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import { cn } from '@/lib/utils';
 import { 
   User, 
@@ -26,7 +26,6 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
@@ -35,7 +34,11 @@ const Onboarding = () => {
     avatarPreview: null as string | null
   });
 
-  const totalSteps = 4; // Aumentamos para 4 etapas
+  // Mock user ID - in real app this would come from auth
+  const mockUserId = 'user-123';
+  const { submitProfile, isSubmitting, calculateAge } = useOnboarding(mockUserId);
+
+  const totalSteps = 4;
   const progress = (currentStep / totalSteps) * 100;
 
   const handleInputChange = (field: string, value: string | Date) => {
@@ -56,24 +59,12 @@ const Onboarding = () => {
   };
 
   const generateAIAvatar = async () => {
-    setIsLoading(true);
     // Simular geração de avatar AI
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Usar avatar placeholder
     const placeholderAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face';
     setFormData(prev => ({ ...prev, avatarPreview: placeholderAvatar }));
-    setIsLoading(false);
-  };
-
-  const calculateAge = (birthDate: Date) => {
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
   };
 
   const canProceed = () => {
@@ -102,10 +93,12 @@ const Onboarding = () => {
   const handleComplete = async () => {
     if (!formData.birthDate) return;
     
-    setIsLoading(true);
-    // Simular criação de perfil
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    navigate('/age-verification');
+    await submitProfile({
+      username: formData.username,
+      fullName: formData.fullName,
+      birthDate: formData.birthDate.toISOString(),
+      avatarUrl: formData.avatarPreview,
+    });
   };
 
   return (
@@ -114,7 +107,7 @@ const Onboarding = () => {
       <header className="flex items-center justify-between p-6 backdrop-blur-sm bg-background/80 border-b">
         <Button 
           variant="ghost" 
-          onClick={() => navigate('/connect')}
+          onClick={() => navigate('/')}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -152,9 +145,9 @@ const Onboarding = () => {
               </CardTitle>
               <CardDescription>
                 {currentStep === 1 && "Tell us a bit about yourself"}
-                {currentStep === 2 && "Please provide your date of birth for age verification"}
+                {currentStep === 2 && "Please provide your date of birth for ZK age verification"}
                 {currentStep === 3 && "Choose or generate your profile picture (optional)"}
-                {currentStep === 4 && "Review your information before proceeding"}
+                {currentStep === 4 && "Review your information before proceeding to ZK verification"}
               </CardDescription>
             </CardHeader>
             
@@ -229,9 +222,9 @@ const Onboarding = () => {
                       <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                         <p className="text-sm text-blue-800 dark:text-blue-300">
                           <CalendarLucide className="inline h-4 w-4 mr-1" />
-                          Age: {calculateAge(formData.birthDate)} years old
+                          Age: {calculateAge(formData.birthDate.toISOString())} years old
                         </p>
-                        {calculateAge(formData.birthDate) < 18 && (
+                        {calculateAge(formData.birthDate.toISOString()) < 18 && (
                           <p className="text-sm text-red-600 dark:text-red-400 mt-2">
                             ⚠️ You must be at least 18 years old to use this service
                           </p>
@@ -242,12 +235,11 @@ const Onboarding = () => {
                   
                   <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
                     <h4 className="font-medium text-amber-800 dark:text-amber-400 mb-2">
-                      🔒 Privacy Notice
+                      🔒 ZK Privacy Notice
                     </h4>
                     <p className="text-sm text-amber-700 dark:text-amber-300">
-                      Your age information will be used for verification purposes and AI analysis. 
-                      We will compare your declared age with your document photo to ensure accuracy 
-                      while protecting your privacy.
+                      Your age will be verified using zero-knowledge proofs. This means we can prove 
+                      you are over 18 without revealing your exact age or birth date to third parties.
                     </p>
                   </div>
                 </div>
@@ -292,17 +284,10 @@ const Onboarding = () => {
                       variant="outline"
                       className="h-auto p-4 flex flex-col items-center gap-2"
                       onClick={generateAIAvatar}
-                      disabled={isLoading}
                     >
-                      {isLoading ? (
-                        <LoadingSpinner />
-                      ) : (
-                        <>
-                          <Sparkles className="h-6 w-6" />
-                          <span>AI Generate</span>
-                          <span className="text-sm text-muted-foreground">Create with AI</span>
-                        </>
-                      )}
+                      <Sparkles className="h-6 w-6" />
+                      <span>AI Generate</span>
+                      <span className="text-sm text-muted-foreground">Create with AI</span>
                     </Button>
                   </div>
                   
@@ -346,7 +331,7 @@ const Onboarding = () => {
                         )}
                         {formData.birthDate && (
                           <p className="text-sm text-muted-foreground">
-                            Age: {calculateAge(formData.birthDate)} years old
+                            Age: {calculateAge(formData.birthDate.toISOString())} years old
                           </p>
                         )}
                       </div>
@@ -379,9 +364,8 @@ const Onboarding = () => {
                       🔄 Next Steps
                     </h4>
                     <p className="text-sm text-blue-700 dark:text-blue-300">
-                      After confirming your profile, you'll need to upload a recent document photo 
-                      for AI-powered age verification. The system will analyze your document and 
-                      compare it with your declared age for security purposes.
+                      After confirming your profile, your age will be verified using zero-knowledge 
+                      proofs. This process ensures privacy while proving you meet the minimum age requirement.
                     </p>
                   </div>
                 </div>
@@ -399,14 +383,14 @@ const Onboarding = () => {
                 
                 <Button 
                   onClick={handleNext}
-                  disabled={!canProceed() || isLoading || (currentStep === 2 && formData.birthDate && calculateAge(formData.birthDate) < 18)}
+                  disabled={!canProceed() || isSubmitting || (currentStep === 2 && formData.birthDate && calculateAge(formData.birthDate.toISOString()) < 18)}
                   className="btn-gradient"
                 >
-                  {isLoading ? (
+                  {isSubmitting ? (
                     <LoadingSpinner size="sm" className="mr-2" />
                   ) : (
                     <>
-                      {currentStep === totalSteps ? 'Complete Profile' : 'Next'}
+                      {currentStep === totalSteps ? 'Start ZK Verification' : 'Next'}
                       {currentStep < totalSteps && <ArrowRight className="h-4 w-4 ml-2" />}
                     </>
                   )}

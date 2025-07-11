@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { zkApiClient, ZKAttestInput } from '@/services/zkApi';
 
 interface ProfileData {
   username: string;
@@ -15,6 +16,7 @@ export function useOnboarding(userId: string | null) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [zkRequestId, setZkRequestId] = useState<string | null>(null);
 
   const calculateAge = (birthDate: string) => {
     const birth = new Date(birthDate);
@@ -25,6 +27,10 @@ export function useOnboarding(userId: string | null) {
       age--;
     }
     return age;
+  };
+
+  const dateToUnixTimestamp = (dateString: string): number => {
+    return Math.floor(new Date(dateString).getTime() / 1000);
   };
 
   const submitProfile = async ({ username, fullName, birthDate, avatarUrl }: ProfileData) => {
@@ -73,7 +79,7 @@ export function useOnboarding(userId: string | null) {
         user_id: userId,
         birth_date: birthDate,
         estimated_age: age,
-        status: 'pending', // Será atualizado após análise da foto
+        status: 'processing', // Mudamos para 'processing' pois estamos enviando para ZK API
         avatar_url: avatarUrl?.trim() || null,
       });
 
@@ -86,17 +92,51 @@ export function useOnboarding(userId: string | null) {
         return;
       }
 
+      // Preparar dados para ZK API
+      const zkInput: ZKAttestInput = {
+        userId: userId,
+        circuit: 'ageVerifier',
+        params: {
+          birthDate: dateToUnixTimestamp(birthDate),
+          minAge: 18,
+          currentDate: dateToUnixTimestamp(new Date().toISOString()),
+        }
+      };
+
+      console.log('Sending to ZK API:', zkInput);
+
+      // Enviar para ZK API
+      const zkResponse = await zkApiClient.submitAttestation(zkInput);
+      setZkRequestId(zkResponse.requestId);
+
+      console.log('ZK API Response:', zkResponse);
+
+      // Salvar o requestId no banco de dados
+      const { error: updateError } = await supabase
+        .from('age_verification')
+        .update({
+          commitment_hash: zkResponse.requestId, // Usando commitment_hash para armazenar o requestId temporariamente
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('Error updating with ZK request ID:', updateError);
+      }
+
       toast({
-        title: 'Success',
-        description: 'Profile completed successfully!',
+        title: 'Profile Created Successfully!',
+        description: 'Age verification is being processed. You will be redirected to track the progress.',
       });
       
-      // Navegar para a próxima etapa - verificação de idade com documento
-      navigate('/age-verification');
-    } catch (err) {
+      // Navegar para a página de geração de prova
+      navigate('/proof-generation');
+      
+    } catch (err: any) {
+      console.error('Profile submission error:', err);
       toast({
         title: 'Error',
-        description: 'An error occurred while saving your profile',
+        description: err?.message || 'An error occurred while creating your profile',
         variant: 'destructive',
       });
     } finally {
@@ -104,5 +144,5 @@ export function useOnboarding(userId: string | null) {
     }
   };
 
-  return { submitProfile, isSubmitting, calculateAge };
+  return { submitProfile, isSubmitting, calculateAge, zkRequestId };
 }

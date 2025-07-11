@@ -8,6 +8,7 @@ import { ThemeProvider } from "./components/providers/ThemeProvider";
 import Landing from "./pages/Landing";
 import WalletConnect from "./pages/WalletConnect";
 import Onboarding from "./pages/Onboarding";
+import AgeVerification from "./pages/AgeVerification";
 import ProofGeneration from "./pages/ProofGeneration";
 import AttestationRegistry from "./pages/AttestationRegistry";
 import NFTMinting from "./pages/NFTMinting";
@@ -26,6 +27,7 @@ const App = () => (
               <Route path="/" element={<Landing />} />
               <Route path="/connect" element={<WalletConnect />} />
               <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/age-verification" element={<AgeVerification />} />
               <Route path="/proof-generation" element={<ProofGeneration />} />
               <Route path="/attestation" element={<AttestationRegistry />} />
               <Route path="/nft-minting" element={<NFTMinting />} />
