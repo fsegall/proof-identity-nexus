@@ -30,6 +30,7 @@ export function useIdentityNFTMint({ address, tokenURI }: UseMintParams) {
       abi: IDENTITY_NFT_ABI,
       functionName: 'mint',
       args: [address, tokenURI],
+      account: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as `0x${string}`,
     });
   };
 

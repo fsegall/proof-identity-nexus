@@ -43,6 +43,7 @@ export const useCreateAttestation = () => {
       address: CONTRACT_ADDRESS,
       functionName: 'createAttestation',
       args: [dataHash, attestationType],
+      account: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as `0x${string}`,
     });
   };
 
