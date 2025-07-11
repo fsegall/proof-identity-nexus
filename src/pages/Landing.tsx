@@ -14,7 +14,8 @@ import {
   Lock,
   Image,
   Database,
-  ArrowRight
+  ArrowRight,
+  UserCheck
 } from 'lucide-react';
 
 const Landing = () => {
@@ -98,19 +99,21 @@ const Landing = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-up">
               <Button 
-                onClick={() => navigate('/connect')}
+                onClick={() => navigate('/onboarding')}
                 className="btn-gradient text-lg px-8 py-4 h-auto group"
               >
-                <Wallet className="h-5 w-5 mr-2" />
-                Connect Wallet
+                <UserCheck className="h-5 w-5 mr-2" />
+                Start Age Verification
                 <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
               
               <Button 
+                onClick={() => navigate('/connect')}
                 variant="outline" 
                 className="text-lg px-8 py-4 h-auto border-2"
               >
-                Learn More
+                <Wallet className="h-5 w-5 mr-2" />
+                Connect Wallet
               </Button>
             </div>
           </div>
@@ -195,7 +198,7 @@ const Landing = () => {
             Join the future of digital identity with our comprehensive Web3 + AI + ZK starter kit
           </p>
           <Button 
-            onClick={() => navigate('/connect')}
+            onClick={() => navigate('/onboarding')}
             className="bg-white text-primary hover:bg-white/95 text-lg px-8 py-4 h-auto font-semibold"
           >
             Start Building Now
