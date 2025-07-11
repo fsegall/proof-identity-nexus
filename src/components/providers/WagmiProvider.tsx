@@ -14,7 +14,7 @@ const config = createConfig({
   connectors: [
     metaMask(),
     walletConnect({ 
-      projectId: process.env.VITE_WALLETCONNECT_PROJECT_ID || 'demo' 
+      projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'demo' 
     }),
   ],
   transports: {
