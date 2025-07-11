@@ -3,18 +3,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ProgressBar } from '@/components/ui/ProgressBar';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useToast } from '@/hooks/use-toast';
-import { zkApiClient } from '@/services/zkApi';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Shield, 
   ArrowLeft, 
   CheckCircle, 
   XCircle,
-  Clock,
   ArrowRight,
   Zap
 } from 'lucide-react';
@@ -22,10 +18,8 @@ import {
 const AgeVerification = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [status, setStatus] = useState<'PROCESSING' | 'VERIFIED' | 'FAILED' | null>(null);
-  const [requestId, setRequestId] = useState<string | null>(null);
-  const [isPolling, setIsPolling] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState<'verified' | 'rejected' | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Mock user ID - in real app this would come from auth
   const mockUserId = 'user-123';
@@ -36,10 +30,9 @@ const AgeVerification = () => {
 
   const loadVerificationStatus = async () => {
     try {
-      // Buscar o requestId do banco de dados
       const { data, error } = await supabase
         .from('age_verification')
-        .select('commitment_hash, status')
+        .select('status')
         .eq('user_id', mockUserId)
         .single();
 
@@ -49,16 +42,8 @@ const AgeVerification = () => {
         return;
       }
 
-      if (data.commitment_hash) {
-        setRequestId(data.commitment_hash);
-        
-        // Se ainda está processando, começar polling
-        if (data.status === 'processing') {
-          startPolling(data.commitment_hash);
-        } else {
-          setStatus(data.status as 'PROCESSING' | 'VERIFIED' | 'FAILED');
-        }
-      }
+      setStatus(data.status as 'verified' | 'rejected');
+      
     } catch (err) {
       console.error('Error loading verification status:', err);
       toast({
@@ -66,92 +51,43 @@ const AgeVerification = () => {
         description: 'Failed to load verification status',
         variant: 'destructive',
       });
-    }
-  };
-
-  const startPolling = async (zkRequestId: string) => {
-    if (isPolling) return;
-    
-    setIsPolling(true);
-    let progressValue = 0;
-    
-    try {
-      const progressInterval = setInterval(() => {
-        progressValue += 2;
-        setProgress(Math.min(progressValue, 95));
-      }, 1000);
-
-      const result = await zkApiClient.pollStatus(zkRequestId, 30, 2000);
-      
-      clearInterval(progressInterval);
-      setProgress(100);
-      setStatus(result.status);
-
-      // Atualizar status no banco de dados
-      const finalStatus = result.status === 'VERIFIED' ? 'verified' : 'rejected';
-      await supabase
-        .from('age_verification')
-        .update({
-          status: finalStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', mockUserId);
-
-      if (result.status === 'VERIFIED') {
-        toast({
-          title: 'Age Verification Successful!',
-          description: '✅ Your age has been verified using zero-knowledge proofs.',
-        });
-      } else {
-        toast({
-          title: 'Age Verification Failed',
-          description: 'The verification process could not confirm your age. Please try again.',
-          variant: 'destructive',
-        });
-      }
-      
-    } catch (err: any) {
-      console.error('Polling error:', err);
-      setStatus('FAILED');
-      toast({
-        title: 'Verification Timeout',
-        description: 'The verification process took too long. Please try again.',
-        variant: 'destructive',
-      });
+      navigate('/onboarding');
     } finally {
-      setIsPolling(false);
+      setIsLoading(false);
     }
   };
 
   const handleContinue = () => {
-    if (status === 'VERIFIED') {
+    if (status === 'verified') {
       navigate('/attestation');
     } else {
       navigate('/onboarding');
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Loading verification status...</p>
+        </div>
+      </div>
+    );
+  }
+
   const getStatusInfo = () => {
     switch (status) {
-      case 'PROCESSING':
-        return {
-          icon: Clock,
-          title: 'Verifying Your Age',
-          description: 'Zero-knowledge proof generation in progress...',
-          color: 'text-blue-600',
-          bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-          borderColor: 'border-blue-200 dark:border-blue-800'
-        };
-      case 'VERIFIED':
+      case 'verified':
         return {
           icon: CheckCircle,
           title: 'Age Verification Complete!',
-          description: 'Your age has been successfully verified using ZK proofs.',
+          description: 'Your age has been successfully verified using zero-knowledge proofs.',
           color: 'text-green-600',
           bgColor: 'bg-green-50 dark:bg-green-900/20',
           borderColor: 'border-green-200 dark:border-green-800'
         };
-      case 'FAILED':
+      case 'rejected':
         return {
           icon: XCircle,
           title: 'Verification Failed',
@@ -164,7 +100,7 @@ const AgeVerification = () => {
         return {
           icon: Shield,
           title: 'Age Verification',
-          description: 'Preparing verification process...',
+          description: 'Processing verification...',
           color: 'text-gray-600',
           bgColor: 'bg-gray-50 dark:bg-gray-900/20',
           borderColor: 'border-gray-200 dark:border-gray-800'
@@ -183,7 +119,6 @@ const AgeVerification = () => {
           variant="ghost" 
           onClick={() => navigate('/onboarding')}
           className="flex items-center gap-2"
-          disabled={isPolling}
         >
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -209,22 +144,6 @@ const AgeVerification = () => {
             </CardHeader>
             
             <CardContent className="space-y-6">
-              {/* Progress for processing state */}
-              {(status === 'PROCESSING' || isPolling) && (
-                <div className="space-y-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Verification Progress</span>
-                    <span className="font-medium">{Math.round(progress)}%</span>
-                  </div>
-                  <ProgressBar value={progress} className="h-2" />
-                  
-                  <div className="flex items-center justify-center gap-2 text-blue-600">
-                    <LoadingSpinner size="sm" />
-                    <span className="text-sm">Generating zero-knowledge proof...</span>
-                  </div>
-                </div>
-              )}
-
               {/* Status Details */}
               <div className={`p-6 rounded-lg border ${statusInfo.bgColor} ${statusInfo.borderColor}`}>
                 <div className="flex items-center gap-3 mb-3">
@@ -232,23 +151,15 @@ const AgeVerification = () => {
                   <h3 className={`font-semibold ${statusInfo.color}`}>Zero-Knowledge Verification</h3>
                 </div>
                 
-                {status === 'PROCESSING' && (
-                  <ul className="text-sm space-y-2 text-blue-700 dark:text-blue-300">
-                    <li>• Generating cryptographic proof of age</li>
-                    <li>• Ensuring privacy of personal data</li>
-                    <li>• Creating blockchain-ready attestation</li>
-                  </ul>
-                )}
-                
-                {status === 'VERIFIED' && (
+                {status === 'verified' && (
                   <div className="text-sm space-y-2 text-green-700 dark:text-green-300">
                     <p>✅ Age verification completed successfully</p>
-                    <p>✅ Zero-knowledge proof generated</p>
+                    <p>✅ Zero-knowledge proof generated and verified</p>
                     <p>✅ Ready for blockchain attestation</p>
                   </div>
                 )}
                 
-                {status === 'FAILED' && (
+                {status === 'rejected' && (
                   <div className="text-sm space-y-2 text-red-700 dark:text-red-300">
                     <p>❌ Verification could not be completed</p>
                     <p>• Please ensure your birth date is correct</p>
@@ -257,40 +168,30 @@ const AgeVerification = () => {
                 )}
               </div>
 
-              {/* Request ID Display */}
-              {requestId && (
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-muted-foreground">Request ID</span>
-                    <StatusBadge status={status === 'VERIFIED' ? 'success' : status === 'FAILED' ? 'error' : 'pending'}>
-                      {status || 'Processing'}
-                    </StatusBadge>
-                  </div>
-                  <p className="font-mono text-sm break-all text-foreground">
-                    {requestId}
-                  </p>
-                </div>
-              )}
+              {/* Status Badge */}
+              <div className="flex justify-center">
+                <StatusBadge status={status === 'verified' ? 'success' : 'error'}>
+                  {status === 'verified' ? 'Verified' : 'Failed'}
+                </StatusBadge>
+              </div>
 
               {/* Action Buttons */}
-              {status && !isPolling && (
-                <div className="flex justify-center">
-                  <Button 
-                    onClick={handleContinue}
-                    className={status === 'VERIFIED' ? 'btn-gradient' : 'btn-outline'}
-                    size="lg"
-                  >
-                    {status === 'VERIFIED' ? (
-                      <>
-                        Continue to Attestation
-                        <ArrowRight className="h-5 w-5 ml-2" />
-                      </>
-                    ) : (
-                      'Try Again'
-                    )}
-                  </Button>
-                </div>
-              )}
+              <div className="flex justify-center">
+                <Button 
+                  onClick={handleContinue}
+                  className={status === 'verified' ? 'btn-gradient' : 'btn-outline'}
+                  size="lg"
+                >
+                  {status === 'verified' ? (
+                    <>
+                      Continue to Attestation
+                      <ArrowRight className="h-5 w-5 ml-2" />
+                    </>
+                  ) : (
+                    'Try Again'
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

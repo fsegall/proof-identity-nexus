@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { zkApiClient, ZKAttestInput } from '@/services/zkApi';
+import { zkApiClient } from '@/services/zkApi';
 
 interface ProfileData {
   username: string;
@@ -16,7 +16,6 @@ export function useOnboarding(userId: string | null) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [zkRequestId, setZkRequestId] = useState<string | null>(null);
 
   const calculateAge = (birthDate: string) => {
     const birth = new Date(birthDate);
@@ -79,7 +78,7 @@ export function useOnboarding(userId: string | null) {
         user_id: userId,
         birth_date: birthDate,
         estimated_age: age,
-        status: 'processing', // Mudamos para 'processing' pois estamos enviando para ZK API
+        status: 'processing',
         avatar_url: avatarUrl?.trim() || null,
       });
 
@@ -92,51 +91,61 @@ export function useOnboarding(userId: string | null) {
         return;
       }
 
-      // Preparar dados para ZK API
-      const zkInput: ZKAttestInput = {
-        userId: userId,
-        circuit: 'ageVerifier',
-        params: {
-          birthDate: dateToUnixTimestamp(birthDate),
-          minAge: 18,
-          currentDate: dateToUnixTimestamp(new Date().toISOString()),
-        }
-      };
+      console.log('Starting ZK age verification...');
 
-      console.log('Sending to ZK API:', zkInput);
+      // Usar a nova API ZK para verificar idade
+      const birthDateTimestamp = dateToUnixTimestamp(birthDate);
+      const verificationResult = await zkApiClient.verifyAge(birthDateTimestamp, 18);
 
-      // Enviar para ZK API
-      const zkResponse = await zkApiClient.submitAttestation(zkInput);
-      setZkRequestId(zkResponse.requestId);
+      console.log('ZK verification result:', verificationResult);
 
-      console.log('ZK API Response:', zkResponse);
-
-      // Salvar o requestId no banco de dados
+      // Determinar status baseado na verificação
+      const finalStatus = verificationResult.valid && verificationResult.isOldEnough ? 'verified' : 'rejected';
+      
+      // Atualizar status no banco de dados
       const { error: updateError } = await supabase
         .from('age_verification')
         .update({
-          commitment_hash: zkResponse.requestId, // Usando commitment_hash para armazenar o requestId temporariamente
+          status: finalStatus,
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', userId);
 
       if (updateError) {
-        console.error('Error updating with ZK request ID:', updateError);
+        console.error('Error updating verification status:', updateError);
       }
 
-      toast({
-        title: 'Profile Created Successfully!',
-        description: 'Age verification is being processed. You will be redirected to track the progress.',
-      });
-      
-      // Navegar para a página de geração de prova
-      navigate('/proof-generation');
+      if (finalStatus === 'verified') {
+        toast({
+          title: 'Profile Created Successfully!',
+          description: '✅ Your age has been verified using zero-knowledge proofs.',
+        });
+        navigate('/attestation');
+      } else {
+        toast({
+          title: 'Age Verification Failed',
+          description: 'Unable to verify your age. Please check your information and try again.',
+          variant: 'destructive',
+        });
+      }
       
     } catch (err: any) {
       console.error('Profile submission error:', err);
+      
+      // Atualizar status como falhou no caso de erro
+      if (userId) {
+        await supabase
+          .from('age_verification')
+          .update({
+            status: 'rejected',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+      }
+      
       toast({
         title: 'Error',
-        description: err?.message || 'An error occurred while creating your profile',
+        description: err?.message || 'An error occurred during age verification',
         variant: 'destructive',
       });
     } finally {
@@ -144,5 +153,5 @@ export function useOnboarding(userId: string | null) {
     }
   };
 
-  return { submitProfile, isSubmitting, calculateAge, zkRequestId };
+  return { submitProfile, isSubmitting, calculateAge };
 }

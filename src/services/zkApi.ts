@@ -1,24 +1,29 @@
 
 const ZK_API_BASE_URL = 'https://zk-threshold-api.fly.dev';
 
-export interface ZKAttestInput {
-  userId: string;
-  circuit: string;
-  params: {
+export interface ZKGenerateProofInput {
+  circuitName: string;
+  input: {
     birthDate: number;
     minAge: number;
     currentDate: number;
   };
 }
 
-export interface ZKAttestResponse {
-  requestId: string;
-  status: 'PROCESSING';
+export interface ZKGenerateProofResponse {
+  proof: object;
+  publicSignals: string[];
 }
 
-export interface ZKStatusResponse {
-  requestId: string;
-  status: 'PROCESSING' | 'VERIFIED' | 'FAILED';
+export interface ZKVerifyInput {
+  circuit: string;
+  proof: object;
+  publicSignals: string[];
+}
+
+export interface ZKVerifyResponse {
+  valid: boolean;
+  isOldEnough: boolean;
 }
 
 export class ZKApiClient {
@@ -42,8 +47,8 @@ export class ZKApiClient {
     return headers;
   }
 
-  async submitAttestation(input: ZKAttestInput): Promise<ZKAttestResponse> {
-    const response = await fetch(`${this.baseUrl}/attest`, {
+  async generateProof(input: ZKGenerateProofInput): Promise<ZKGenerateProofResponse> {
+    const response = await fetch(`${this.baseUrl}/generate-proof`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(input),
@@ -56,35 +61,43 @@ export class ZKApiClient {
     return response.json();
   }
 
-  async getAttestationStatus(requestId: string): Promise<ZKStatusResponse> {
-    const response = await fetch(`${this.baseUrl}/status/${requestId}`, {
-      method: 'GET',
+  async verifyProof(input: ZKVerifyInput): Promise<ZKVerifyResponse> {
+    const response = await fetch(`${this.baseUrl}/verify`, {
+      method: 'POST',
       headers: this.getHeaders(),
+      body: JSON.stringify(input),
     });
 
     if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('Attestation request not found');
-      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     return response.json();
   }
 
-  async pollStatus(requestId: string, maxAttempts: number = 30, intervalMs: number = 2000): Promise<ZKStatusResponse> {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const status = await this.getAttestationStatus(requestId);
-      
-      if (status.status === 'VERIFIED' || status.status === 'FAILED') {
-        return status;
+  async verifyAge(birthDate: number, minAge: number = 18): Promise<ZKVerifyResponse> {
+    const currentDate = Math.floor(Date.now() / 1000);
+    
+    // Primeiro, gerar a prova
+    const proofInput: ZKGenerateProofInput = {
+      circuitName: 'ageVerifier',
+      input: {
+        birthDate,
+        minAge,
+        currentDate
       }
+    };
 
-      // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, intervalMs));
-    }
+    const proofResponse = await this.generateProof(proofInput);
 
-    throw new Error('Polling timeout - verification taking too long');
+    // Depois, verificar a prova
+    const verifyInput: ZKVerifyInput = {
+      circuit: 'ageVerifier',
+      proof: proofResponse.proof,
+      publicSignals: proofResponse.publicSignals
+    };
+
+    return this.verifyProof(verifyInput);
   }
 
   async healthCheck(): Promise<{ status: string; uptime: number }> {
