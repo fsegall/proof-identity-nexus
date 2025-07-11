@@ -1,20 +1,25 @@
 
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { cn } from '@/lib/utils';
 import { 
   User, 
   Upload, 
   ArrowLeft, 
   ArrowRight, 
-  Camera,
   Sparkles,
-  Check
+  Check,
+  Calendar as CalendarLucide
 } from 'lucide-react';
 
 const Onboarding = () => {
@@ -25,14 +30,15 @@ const Onboarding = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
+    birthDate: undefined as Date | undefined,
     avatar: null as File | null,
     avatarPreview: null as string | null
   });
 
-  const totalSteps = 3;
+  const totalSteps = 4; // Aumentamos para 4 etapas
   const progress = (currentStep / totalSteps) * 100;
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | Date) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -51,13 +57,38 @@ const Onboarding = () => {
 
   const generateAIAvatar = async () => {
     setIsLoading(true);
-    // Simulate AI avatar generation
+    // Simular geração de avatar AI
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Use placeholder avatar
+    // Usar avatar placeholder
     const placeholderAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face';
     setFormData(prev => ({ ...prev, avatarPreview: placeholderAvatar }));
     setIsLoading(false);
+  };
+
+  const calculateAge = (birthDate: Date) => {
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const canProceed = () => {
+    switch (currentStep) {
+      case 1:
+        return formData.fullName.trim() !== '';
+      case 2:
+        return formData.birthDate !== undefined;
+      case 3:
+        return true; // Avatar é opcional
+      case 4:
+        return true; // Review step
+      default:
+        return false;
+    }
   };
 
   const handleNext = () => {
@@ -69,10 +100,12 @@ const Onboarding = () => {
   };
 
   const handleComplete = async () => {
+    if (!formData.birthDate) return;
+    
     setIsLoading(true);
-    // Simulate profile creation
+    // Simular criação de perfil
     await new Promise(resolve => setTimeout(resolve, 1500));
-    navigate('/proof-generation');
+    navigate('/age-verification');
   };
 
   return (
@@ -113,13 +146,15 @@ const Onboarding = () => {
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">
                 {currentStep === 1 && "Personal Information"}
-                {currentStep === 2 && "Profile Avatar"}
-                {currentStep === 3 && "Review & Confirm"}
+                {currentStep === 2 && "Date of Birth"}
+                {currentStep === 3 && "Profile Avatar"}
+                {currentStep === 4 && "Review & Confirm"}
               </CardTitle>
               <CardDescription>
                 {currentStep === 1 && "Tell us a bit about yourself"}
-                {currentStep === 2 && "Choose or generate your profile picture"}
-                {currentStep === 3 && "Review your information before proceeding"}
+                {currentStep === 2 && "Please provide your date of birth for age verification"}
+                {currentStep === 3 && "Choose or generate your profile picture (optional)"}
+                {currentStep === 4 && "Review your information before proceeding"}
               </CardDescription>
             </CardHeader>
             
@@ -154,8 +189,72 @@ const Onboarding = () => {
                 </div>
               )}
 
-              {/* Step 2: Avatar Upload */}
+              {/* Step 2: Date of Birth */}
               {currentStep === 2 && (
+                <div className="space-y-6 animate-slide-up">
+                  <div className="space-y-4">
+                    <Label>Date of Birth *</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full h-12 justify-start text-left font-normal",
+                            !formData.birthDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.birthDate ? (
+                            format(formData.birthDate, "PPP")
+                          ) : (
+                            <span>Select your date of birth</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={formData.birthDate}
+                          onSelect={(date) => handleInputChange('birthDate', date || new Date())}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    
+                    {formData.birthDate && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <p className="text-sm text-blue-800 dark:text-blue-300">
+                          <CalendarLucide className="inline h-4 w-4 mr-1" />
+                          Age: {calculateAge(formData.birthDate)} years old
+                        </p>
+                        {calculateAge(formData.birthDate) < 18 && (
+                          <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+                            ⚠️ You must be at least 18 years old to use this service
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <h4 className="font-medium text-amber-800 dark:text-amber-400 mb-2">
+                      🔒 Privacy Notice
+                    </h4>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      Your age information will be used for verification purposes and AI analysis. 
+                      We will compare your declared age with your document photo to ensure accuracy 
+                      while protecting your privacy.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Avatar Upload */}
+              {currentStep === 3 && (
                 <div className="space-y-6 animate-slide-up">
                   <div className="flex flex-col items-center">
                     <div className="relative">
@@ -207,6 +306,13 @@ const Onboarding = () => {
                     </Button>
                   </div>
                   
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      💡 <strong>Tip:</strong> This avatar is optional and will be used for your NFT identity. 
+                      You can upload a photo or generate an AI avatar later in the process.
+                    </p>
+                  </div>
+                  
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -217,8 +323,8 @@ const Onboarding = () => {
                 </div>
               )}
 
-              {/* Step 3: Review */}
-              {currentStep === 3 && (
+              {/* Step 4: Review */}
+              {currentStep === 4 && (
                 <div className="space-y-6 animate-slide-up">
                   <div className="bg-muted/50 rounded-lg p-6 space-y-4">
                     <div className="flex items-center gap-4">
@@ -238,6 +344,11 @@ const Onboarding = () => {
                         {formData.username && (
                           <p className="text-muted-foreground">@{formData.username}</p>
                         )}
+                        {formData.birthDate && (
+                          <p className="text-sm text-muted-foreground">
+                            Age: {calculateAge(formData.birthDate)} years old
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -252,18 +363,25 @@ const Onboarding = () => {
                       <span className="font-medium">{formData.username || 'Not set'}</span>
                     </div>
                     <div className="flex justify-between py-2 border-b">
+                      <span className="text-muted-foreground">Date of Birth</span>
+                      <span className="font-medium">
+                        {formData.birthDate ? format(formData.birthDate, "PPP") : 'Not set'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b">
                       <span className="text-muted-foreground">Avatar</span>
-                      <span className="font-medium">{formData.avatarPreview ? 'Uploaded' : 'Not set'}</span>
+                      <span className="font-medium">{formData.avatarPreview ? 'Set' : 'Will be generated later'}</span>
                     </div>
                   </div>
                   
                   <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                     <h4 className="font-medium text-blue-800 dark:text-blue-400 mb-2">
-                      Next Steps
+                      🔄 Next Steps
                     </h4>
                     <p className="text-sm text-blue-700 dark:text-blue-300">
-                      After confirming your profile, we'll generate AI-powered proofs and create 
-                      zero-knowledge attestations for your identity verification.
+                      After confirming your profile, you'll need to upload a recent document photo 
+                      for AI-powered age verification. The system will analyze your document and 
+                      compare it with your declared age for security purposes.
                     </p>
                   </div>
                 </div>
@@ -281,14 +399,14 @@ const Onboarding = () => {
                 
                 <Button 
                   onClick={handleNext}
-                  disabled={!formData.fullName || isLoading}
+                  disabled={!canProceed() || isLoading || (currentStep === 2 && formData.birthDate && calculateAge(formData.birthDate) < 18)}
                   className="btn-gradient"
                 >
                   {isLoading ? (
                     <LoadingSpinner size="sm" className="mr-2" />
                   ) : (
                     <>
-                      {currentStep === totalSteps ? 'Generate Proof' : 'Next'}
+                      {currentStep === totalSteps ? 'Complete Profile' : 'Next'}
                       {currentStep < totalSteps && <ArrowRight className="h-4 w-4 ml-2" />}
                     </>
                   )}

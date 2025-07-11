@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 interface ProfileData {
   username: string;
   fullName: string;
+  birthDate: string;
   avatarUrl: string | null;
 }
 
@@ -15,7 +16,18 @@ export function useOnboarding(userId: string | null) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const submitProfile = async ({ username, fullName, avatarUrl }: ProfileData) => {
+  const calculateAge = (birthDate: string) => {
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const submitProfile = async ({ username, fullName, birthDate, avatarUrl }: ProfileData) => {
     if (!userId) {
       toast({
         title: 'Error',
@@ -25,20 +37,50 @@ export function useOnboarding(userId: string | null) {
       return;
     }
 
+    // Validar se o usuário tem pelo menos 18 anos
+    const age = calculateAge(birthDate);
+    if (age < 18) {
+      toast({
+        title: 'Age Verification Required',
+        description: 'You must be at least 18 years old to use this service',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.from('users').upsert({
+      // Salvar perfil do usuário
+      const { error: profileError } = await supabase.from('users').upsert({
         id: userId,
         username: username.trim(),
         full_name: fullName.trim(),
         avatar_url: avatarUrl?.trim() || null,
       });
 
-      if (error) {
+      if (profileError) {
         toast({
           title: 'Error',
-          description: error.message,
+          description: profileError.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Salvar data de nascimento na tabela de verificação de idade
+      const { error: ageError } = await supabase.from('age_verification').upsert({
+        user_id: userId,
+        birth_date: birthDate,
+        estimated_age: age,
+        status: 'pending', // Será atualizado após análise da foto
+        avatar_url: avatarUrl?.trim() || null,
+      });
+
+      if (ageError) {
+        toast({
+          title: 'Error',
+          description: ageError.message,
           variant: 'destructive',
         });
         return;
@@ -48,7 +90,9 @@ export function useOnboarding(userId: string | null) {
         title: 'Success',
         description: 'Profile completed successfully!',
       });
-      navigate('/proof-generation');
+      
+      // Navegar para a próxima etapa - verificação de idade com documento
+      navigate('/age-verification');
     } catch (err) {
       toast({
         title: 'Error',
@@ -60,5 +104,5 @@ export function useOnboarding(userId: string | null) {
     }
   };
 
-  return { submitProfile, isSubmitting };
+  return { submitProfile, isSubmitting, calculateAge };
 }
