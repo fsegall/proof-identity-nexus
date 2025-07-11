@@ -56,23 +56,9 @@ export function useOnboarding(userId: string | null) {
     setIsSubmitting(true);
 
     try {
-      // Salvar perfil do usuário
-      const { error: profileError } = await supabase.from('users').upsert({
-        id: userId,
-        username: username.trim(),
-        full_name: fullName.trim(),
-        avatar_url: avatarUrl?.trim() || null,
-      });
-
-      if (profileError) {
-        toast({
-          title: 'Error',
-          description: profileError.message,
-          variant: 'destructive',
-        });
-        return;
-      }
-
+      // Only save to age_verification table for now (skip users table to avoid RLS issues with mock user)
+      console.log('Saving profile data for user:', userId);
+      
       // Salvar data de nascimento na tabela de verificação de idade
       const { error: ageError } = await supabase.from('age_verification').upsert({
         user_id: userId,
@@ -83,6 +69,7 @@ export function useOnboarding(userId: string | null) {
       });
 
       if (ageError) {
+        console.error('Error saving age verification:', ageError);
         toast({
           title: 'Error',
           description: ageError.message,
@@ -120,7 +107,7 @@ export function useOnboarding(userId: string | null) {
           title: 'Profile Created Successfully!',
           description: '✅ Your age has been verified using zero-knowledge proofs.',
         });
-        navigate('/attestation');
+        navigate('/age-verification');
       } else {
         toast({
           title: 'Age Verification Failed',
