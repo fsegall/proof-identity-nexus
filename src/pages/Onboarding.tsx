@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { 
   User, 
@@ -34,12 +35,29 @@ const Onboarding = () => {
     avatarPreview: null as string | null
   });
 
-  // Use a valid UUID format for mock user ID
-  const mockUserId = '550e8400-e29b-41d4-a716-446655440000';
-  const { submitProfile, isSubmitting, calculateAge } = useOnboarding(mockUserId);
+  const { user, loading } = useAuth();
+  const { submitProfile, isSubmitting, calculateAge } = useOnboarding(user?.id || null);
 
   const totalSteps = 4;
   const progress = (currentStep / totalSteps) * 100;
+
+  // Redirect to login if not authenticated
+  if (!loading && !user) {
+    navigate('/connect');
+    return null;
+  }
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner size="lg" className="mx-auto mb-4" />
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleInputChange = (field: string, value: string | Date) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -118,6 +136,11 @@ const Onboarding = () => {
             <User className="h-5 w-5 text-white" />
           </div>
           <span className="text-xl font-bold">Profile Setup</span>
+          {user && (
+            <span className="text-sm text-muted-foreground">
+              ({user.email})
+            </span>
+          )}
         </div>
       </header>
 

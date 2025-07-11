@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Shield, 
@@ -17,22 +19,30 @@ import {
 const AgeVerification = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
   const [status, setStatus] = useState<'verified' | 'rejected' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Use a valid UUID format for mock user ID
-  const mockUserId = '550e8400-e29b-41d4-a716-446655440000';
+  // Redirect to login if not authenticated
+  if (!authLoading && !user) {
+    navigate('/connect');
+    return null;
+  }
 
   useEffect(() => {
-    loadVerificationStatus();
-  }, []);
+    if (user) {
+      loadVerificationStatus();
+    }
+  }, [user]);
 
   const loadVerificationStatus = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('age_verification')
         .select('status')
-        .eq('user_id', mockUserId)
+        .eq('user_id', user.id)
         .single();
 
       if (error || !data) {
@@ -64,11 +74,11 @@ const AgeVerification = () => {
     }
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center">
         <div className="text-center">
-          <Shield className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <LoadingSpinner size="lg" className="mx-auto mb-4" />
           <p>Loading verification status...</p>
         </div>
       </div>
@@ -127,6 +137,11 @@ const AgeVerification = () => {
             <Shield className="h-5 w-5 text-white" />
           </div>
           <span className="text-xl font-bold">Age Verification</span>
+          {user && (
+            <span className="text-sm text-muted-foreground">
+              ({user.email})
+            </span>
+          )}
         </div>
       </header>
 

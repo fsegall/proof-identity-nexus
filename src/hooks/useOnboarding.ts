@@ -56,8 +56,25 @@ export function useOnboarding(userId: string | null) {
     setIsSubmitting(true);
 
     try {
-      // Only save to age_verification table for now (skip users table to avoid RLS issues with mock user)
       console.log('Saving profile data for user:', userId);
+      
+      // Salvar perfil do usuário na tabela users
+      const { error: profileError } = await supabase.from('users').upsert({
+        id: userId,
+        username: username.trim(),
+        full_name: fullName.trim(),
+        avatar_url: avatarUrl?.trim() || null,
+      });
+
+      if (profileError) {
+        console.error('Error saving user profile:', profileError);
+        toast({
+          title: 'Error',
+          description: profileError.message,
+          variant: 'destructive',
+        });
+        return;
+      }
       
       // Salvar data de nascimento na tabela de verificação de idade
       const { error: ageError } = await supabase.from('age_verification').upsert({
