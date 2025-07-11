@@ -34,8 +34,8 @@ const Onboarding = () => {
     avatarPreview: null as string | null
   });
 
-  // Mock user ID - in real app this would come from auth
-  const mockUserId = 'user-123';
+  // Use a valid UUID format for mock user ID
+  const mockUserId = '550e8400-e29b-41d4-a716-446655440000';
   const { submitProfile, isSubmitting, calculateAge } = useOnboarding(mockUserId);
 
   const totalSteps = 4;

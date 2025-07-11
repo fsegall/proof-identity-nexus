@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,8 +20,8 @@ const AgeVerification = () => {
   const [status, setStatus] = useState<'verified' | 'rejected' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Mock user ID - in real app this would come from auth
-  const mockUserId = 'user-123';
+  // Use a valid UUID format for mock user ID
+  const mockUserId = '550e8400-e29b-41d4-a716-446655440000';
 
   useEffect(() => {
     loadVerificationStatus();
