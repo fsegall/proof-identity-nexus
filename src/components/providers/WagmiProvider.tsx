@@ -3,8 +3,7 @@ import React from 'react';
 import { WagmiProvider as WagmiReactProvider, createConfig, http } from 'wagmi';
 import { mainnet, sepolia } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { connectorsForWallets } from '@wagmi/connectors';
-import { metaMaskWallet, walletConnectWallet } from '@wagmi/connectors';
+import { metaMask, walletConnect } from 'wagmi/connectors';
 
 // Create a new QueryClient instance for Wagmi
 const queryClient = new QueryClient();
@@ -13,8 +12,10 @@ const queryClient = new QueryClient();
 const config = createConfig({
   chains: [mainnet, sepolia],
   connectors: [
-    metaMaskWallet({ projectId: 'demo' }),
-    walletConnectWallet({ projectId: 'demo' }),
+    metaMask(),
+    walletConnect({ 
+      projectId: process.env.VITE_WALLETCONNECT_PROJECT_ID || 'demo' 
+    }),
   ],
   transports: {
     [mainnet.id]: http(),
