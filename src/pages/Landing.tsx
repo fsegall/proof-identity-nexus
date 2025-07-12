@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useWallet } from '@/hooks/useWallet';
 import { 
   Shield, 
   Wallet, 
@@ -23,6 +24,7 @@ const Landing = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { user, signOut } = useAuth();
+  const { isConnected, account, connectWallet, disconnectWallet } = useWallet();
 
   const handleSignOut = async () => {
     await signOut();
@@ -98,6 +100,27 @@ const Landing = () => {
         </div>
         <div className="flex items-center space-x-4">
           <LanguageToggle />
+          {isConnected ? (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={disconnectWallet}
+              className="flex items-center gap-2"
+            >
+              <Wallet className="h-4 w-4" />
+              Disconnect
+            </Button>
+          ) : (
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={connectWallet}
+              className="flex items-center gap-2"
+            >
+              <Wallet className="h-4 w-4" />
+              Connect Wallet
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
