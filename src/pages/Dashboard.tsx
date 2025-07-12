@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { useWeb3 } from '@/components/providers/Web3Provider';
+import { useWallet } from '@/hooks/useWallet';
 import { 
   User, 
   Shield, 
@@ -27,7 +27,7 @@ import {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { account, disconnectWallet } = useWeb3();
+  const { account, disconnectWallet } = useWallet();
   const [copiedAddress, setCopiedAddress] = useState(false);
 
   // Mock user data
