@@ -79,7 +79,7 @@ const Landing = () => {
           <div className="w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-lg flex items-center justify-center">
             <Shield className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold">ZK Identity</span>
+          <span className="text-xl font-bold">Identizy</span>
         </div>
         <div className="flex items-center space-x-4">
           <LanguageToggle />
@@ -250,7 +250,7 @@ const Landing = () => {
             <div className="w-6 h-6 bg-gradient-to-r from-primary to-accent rounded flex items-center justify-center">
               <Shield className="h-4 w-4 text-white" />
             </div>
-            <span className="font-semibold">ZK Identity</span>
+            <span className="font-semibold">Identizy</span>
           </div>
           <p className="text-sm text-muted-foreground">
             {t('footer.copyright')}
