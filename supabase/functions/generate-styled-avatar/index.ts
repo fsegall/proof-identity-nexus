@@ -38,7 +38,7 @@ serve(async (req) => {
     console.log('Initializing Hugging Face client...')
     const hf = new HfInference(hfToken)
 
-    // Style-specific prompt enhancements - mais específicos para manter a pessoa
+    // Style-specific prompt enhancements - more specific to maintain the person
     const stylePrompts = {
       cyberpunk: `same person, same face, cyberpunk style transformation, neon lights, futuristic aesthetic, glowing colors, high tech background, maintain facial features and identity`,
       fantasy: `same person, same face, fantasy art transformation, magical elements, medieval aesthetic, ethereal lighting, mystical background, maintain facial features and identity`,
@@ -73,9 +73,9 @@ serve(async (req) => {
             inputs: imageBlob,
             parameters: {
               prompt: enhancedPrompt,
-              strength: 0.6, // Reduzir para manter mais da imagem original
-              guidance_scale: 8.0, // Aumentar para seguir melhor o prompt
-              num_inference_steps: 25 // Aumentar para melhor qualidade
+              strength: 0.6, // Reduce to keep more of the original image
+              guidance_scale: 8.0, // Increase to better follow the prompt
+              num_inference_steps: 25 // Increase for better quality
             },
             model: 'stabilityai/stable-diffusion-xl-base-1.0'
           }),
@@ -87,13 +87,13 @@ serve(async (req) => {
       } catch (imageToImageError) {
         console.log('Image-to-image failed, trying different approach:', imageToImageError.message)
         
-        // Tentar com modelo diferente e parâmetros ajustados
+        // Try with different model and adjusted parameters
         try {
           const fallbackTimeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Fallback request timeout after 25 seconds')), 25000)
           })
 
-          // Usar um prompt mais específico para manter a identidade
+          // Use a more specific prompt to maintain identity
           const identityPrompt = `transform this exact person with ${style} style, keep the same face, same person, same facial features, only change the artistic style and background`
 
           image = await Promise.race([
@@ -101,7 +101,7 @@ serve(async (req) => {
               inputs: imageBlob,
               parameters: {
                 prompt: identityPrompt,
-                strength: 0.5, // Ainda mais conservador
+                strength: 0.5, // Even more conservative
                 guidance_scale: 9.0,
                 num_inference_steps: 20
               },
