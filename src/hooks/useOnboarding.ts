@@ -58,41 +58,130 @@ export function useOnboarding(userId: string | null) {
     try {
       console.log('Saving profile data for user:', userId);
       
-      // Salvar perfil do usuário na tabela users
-      const { error: profileError } = await supabase.from('users').upsert({
-        id: userId,
-        username: username.trim(),
-        full_name: fullName.trim(),
-        avatar_url: avatarUrl?.trim() || null,
-      });
+      // Verificar se o usuário já existe antes de tentar inserir
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .single();
 
-      if (profileError) {
-        console.error('Error saving user profile:', profileError);
-        toast({
-          title: 'Error',
-          description: profileError.message,
-          variant: 'destructive',
-        });
-        return;
+      if (existingUser) {
+        // Usuário já existe, apenas atualizar
+        console.log('User already exists, updating profile...');
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({
+            username: username.trim(),
+            full_name: fullName.trim(),
+            avatar_url: avatarUrl?.trim() || null,
+          })
+          .eq('id', userId);
+
+        if (updateError) {
+          console.error('Error updating user profile:', updateError);
+          toast({
+            title: 'Error',
+            description: updateError.message,
+            variant: 'destructive',
+          });
+          return;
+        }
+      } else {
+        // Usuário não existe, criar novo
+        console.log('Creating new user profile...');
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            username: username.trim(),
+            full_name: fullName.trim(),
+            avatar_url: avatarUrl?.trim() || null,
+          });
+
+        if (insertError) {
+          // Se ainda houver erro de chave duplicada, tentar atualizar
+          if (insertError.code === '23505') {
+            console.log('Duplicate key error, attempting update instead...');
+            const { error: updateError } = await supabase
+              .from('users')
+              .update({
+                username: username.trim(),
+                full_name: fullName.trim(),
+                avatar_url: avatarUrl?.trim() || null,
+              })
+              .eq('id', userId);
+
+            if (updateError) {
+              console.error('Error updating user profile after duplicate key:', updateError);
+              toast({
+                title: 'Error',
+                description: updateError.message,
+                variant: 'destructive',
+              });
+              return;
+            }
+          } else {
+            console.error('Error inserting user profile:', insertError);
+            toast({
+              title: 'Error',
+              description: insertError.message,
+              variant: 'destructive',
+            });
+            return;
+          }
+        }
       }
       
-      // Salvar data de nascimento na tabela de verificação de idade
-      const { error: ageError } = await supabase.from('age_verification').upsert({
-        user_id: userId,
-        birth_date: birthDate,
-        estimated_age: age,
-        status: 'processing',
-        avatar_url: avatarUrl?.trim() || null,
-      });
+      // Verificar se já existe verificação de idade para este usuário
+      const { data: existingVerification } = await supabase
+        .from('age_verification')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
 
-      if (ageError) {
-        console.error('Error saving age verification:', ageError);
-        toast({
-          title: 'Error',
-          description: ageError.message,
-          variant: 'destructive',
-        });
-        return;
+      if (existingVerification) {
+        // Já existe, apenas atualizar
+        const { error: ageUpdateError } = await supabase
+          .from('age_verification')
+          .update({
+            birth_date: birthDate,
+            estimated_age: age,
+            status: 'processing',
+            avatar_url: avatarUrl?.trim() || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+
+        if (ageUpdateError) {
+          console.error('Error updating age verification:', ageUpdateError);
+          toast({
+            title: 'Error',
+            description: ageUpdateError.message,
+            variant: 'destructive',
+          });
+          return;
+        }
+      } else {
+        // Criar nova verificação de idade
+        const { error: ageError } = await supabase
+          .from('age_verification')
+          .insert({
+            user_id: userId,
+            birth_date: birthDate,
+            estimated_age: age,
+            status: 'processing',
+            avatar_url: avatarUrl?.trim() || null,
+          });
+
+        if (ageError) {
+          console.error('Error saving age verification:', ageError);
+          toast({
+            title: 'Error',
+            description: ageError.message,
+            variant: 'destructive',
+          });
+          return;
+        }
       }
 
       console.log('Starting ZK age verification...');
