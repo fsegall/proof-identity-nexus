@@ -38,7 +38,8 @@ serve(async (req) => {
       )
     }
 
-    console.log('Token available:', hfToken.substring(0, 10) + '...')
+    console.log('Token available:', hfToken ? 'Yes' : 'No')
+    console.log('Token length:', hfToken?.length || 0)
     console.log('Initializing Hugging Face client...')
     const hf = new HfInference(hfToken)
 
