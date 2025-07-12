@@ -1,6 +1,9 @@
+
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LanguageToggle } from '@/components/ui/LanguageToggle';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   Shield, 
   Wallet, 
@@ -10,35 +13,37 @@ import {
   ArrowRight,
   Play,
   Zap,
-  Globe
+  Globe,
+  Plus
 } from 'lucide-react';
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const features = [
     {
       icon: Shield,
-      title: "Zero-Knowledge Proofs",
-      description: "Prove your identity without revealing personal information using cutting-edge cryptographic techniques.",
+      title: t('features.zkProofs.title'),
+      description: t('features.zkProofs.desc'),
       color: "from-blue-500 to-cyan-500"
     },
     {
       icon: Wallet,
-      title: "Web3 Integration",
-      description: "Seamlessly connect with your favorite wallets and interact with blockchain networks.",
+      title: t('features.web3.title'),
+      description: t('features.web3.desc'),
       color: "from-purple-500 to-pink-500"
     },
     {
       icon: Lock,
-      title: "Privacy First",
-      description: "Your personal data remains private while still enabling verification and trust.",
+      title: t('features.privacy.title'),
+      description: t('features.privacy.desc'),
       color: "from-orange-500 to-red-500"
     },
     {
       icon: User,
-      title: "Age Verification",
-      description: "Verify your age for age-restricted services without exposing your birth date.",
+      title: t('features.age.title'),
+      description: t('features.age.desc'),
       color: "from-green-500 to-emerald-500"
     }
   ];
@@ -46,23 +51,23 @@ const Landing = () => {
   const steps = [
     {
       number: 1,
-      title: "Create Account",
-      description: "Sign up and create your secure identity profile"
+      title: t('howItWorks.step1.title'),
+      description: t('howItWorks.step1.desc')
     },
     {
       number: 2,
-      title: "Connect Wallet",
-      description: "Link your Web3 wallet for blockchain interactions"
+      title: t('howItWorks.step2.title'),
+      description: t('howItWorks.step2.desc')
     },
     {
       number: 3,
-      title: "Verify Identity",
-      description: "Complete ZK age verification privately and securely"
+      title: t('howItWorks.step3.title'),
+      description: t('howItWorks.step3.desc')
     },
     {
       number: 4,
-      title: "Mint NFT",
-      description: "Get your unique identity NFT as proof of verification"
+      title: t('howItWorks.step4.title'),
+      description: t('howItWorks.step4.desc')
     }
   ];
 
@@ -77,11 +82,21 @@ const Landing = () => {
           <span className="text-xl font-bold">ZK Identity</span>
         </div>
         <div className="flex items-center space-x-4">
+          <LanguageToggle />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/create-attestation')}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Create Attestation
+          </Button>
           <Button variant="ghost" onClick={() => navigate('/auth')}>
-            Entrar
+            {t('nav.login')}
           </Button>
           <Button onClick={() => navigate('/auth')} className="btn-gradient">
-            Começar
+            {t('nav.getStarted')}
           </Button>
         </div>
       </nav>
@@ -92,23 +107,21 @@ const Landing = () => {
           {/* Badge */}
           <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full border border-primary/20 text-primary">
             <Sparkles className="h-4 w-4 mr-2" />
-            <span className="text-sm font-medium">Powered by Zero-Knowledge Technology</span>
+            <span className="text-sm font-medium">{t('hero.badge')}</span>
           </div>
 
           {/* Headline */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent leading-tight">
-            Verify Your Identity
+            {t('hero.title1')}
             <br />
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Without Revealing It
+              {t('hero.title2')}
             </span>
           </h1>
 
           {/* Subtitle */}
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Experience the future of digital identity with zero-knowledge proofs. 
-            Prove you're over 18 without sharing personal information, mint unique NFTs, 
-            and maintain complete privacy.
+            {t('hero.subtitle')}
           </p>
 
           {/* CTA Buttons */}
@@ -118,7 +131,7 @@ const Landing = () => {
               className="btn-gradient text-lg px-8 py-6 h-auto group"
               onClick={() => navigate('/auth')}
             >
-              Começar Agora
+              {t('hero.startNow')}
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button 
@@ -127,7 +140,7 @@ const Landing = () => {
               className="text-lg px-8 py-6 h-auto border-2 group"
             >
               <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
-              Ver Demo
+              {t('hero.viewDemo')}
             </Button>
           </div>
 
@@ -135,15 +148,15 @@ const Landing = () => {
           <div className="flex items-center justify-center gap-8 pt-12 opacity-60">
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              <span className="text-sm">100% Private</span>
+              <span className="text-sm">{t('hero.private')}</span>
             </div>
             <div className="flex items-center gap-2">
               <Zap className="h-5 w-5" />
-              <span className="text-sm">Instant Verification</span>
+              <span className="text-sm">{t('hero.instant')}</span>
             </div>
             <div className="flex items-center gap-2">
               <Globe className="h-5 w-5" />
-              <span className="text-sm">Web3 Ready</span>
+              <span className="text-sm">{t('hero.web3Ready')}</span>
             </div>
           </div>
         </div>
@@ -154,11 +167,10 @@ const Landing = () => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Why Choose ZK Identity?
+              {t('features.title')}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Revolutionary technology that puts privacy and security at the forefront
-              of digital identity verification.
+              {t('features.subtitle')}
             </p>
           </div>
 
@@ -185,10 +197,10 @@ const Landing = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              How It Works
+              {t('howItWorks.title')}
             </h2>
             <p className="text-lg text-muted-foreground">
-              Get verified in just four simple steps
+              {t('howItWorks.subtitle')}
             </p>
           </div>
 
@@ -215,17 +227,17 @@ const Landing = () => {
       <section className="py-20 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Ready to Get Started?
+            {t('cta.title')}
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Join thousands of users who trust ZK Identity for secure, private verification.
+            {t('cta.subtitle')}
           </p>
           <Button 
             size="lg" 
             className="btn-gradient text-lg px-8 py-6 h-auto"
             onClick={() => navigate('/auth')}
           >
-            Create Your Identity
+            {t('cta.button')}
             <Sparkles className="ml-2 h-5 w-5" />
           </Button>
         </div>
@@ -241,7 +253,7 @@ const Landing = () => {
             <span className="font-semibold">ZK Identity</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2024 ZK Identity. Privacy-first identity verification.
+            {t('footer.copyright')}
           </p>
         </div>
       </footer>
