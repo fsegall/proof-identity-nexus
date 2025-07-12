@@ -10,7 +10,7 @@ const ATTESTATION_ABI = [
       { name: 'dataHash', type: 'bytes32' },
       { name: 'attestationType', type: 'string' }
     ],
-    name: 'createAttestation',
+    name: 'attest',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function'
@@ -42,7 +42,7 @@ export const useCreateAttestation = () => {
     writeContract({
       abi: ATTESTATION_ABI,
       address: CONTRACT_ADDRESS,
-      functionName: 'createAttestation',
+      functionName: 'attest',
       args: [dataHash, attestationType],
       account: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as `0x${string}`,
       chain: foundry,
