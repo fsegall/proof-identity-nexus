@@ -14,9 +14,9 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, style } = await req.json()
+    const { prompt, style, imageData } = await req.json()
 
-    console.log('Request received with:', { prompt, style })
+    console.log('Request received with:', { prompt, style, hasImageData: !!imageData })
 
     if (!prompt) {
       console.error('Missing prompt in request')
@@ -40,21 +40,57 @@ serve(async (req) => {
 
     // Style-specific prompt enhancements
     const stylePrompts = {
-      cyberpunk: `${prompt}, cyberpunk style, neon lights, futuristic, digital art, glowing colors, high tech aesthetic, synthwave`,
-      fantasy: `${prompt}, fantasy art style, magical, medieval, ethereal lighting, mystical atmosphere, dragons, castles`,
-      artistic: `${prompt}, abstract art style, colorful, artistic interpretation, creative composition, painterly`,
-      minimal: `${prompt}, minimalist style, clean lines, simple composition, modern aesthetic, white background`
+      cyberpunk: `${prompt}, cyberpunk style, neon lights, futuristic, digital art, glowing colors, high tech aesthetic, synthwave, portrait`,
+      fantasy: `${prompt}, fantasy art style, magical, medieval, ethereal lighting, mystical atmosphere, fantasy portrait`,
+      artistic: `${prompt}, abstract art style, colorful, artistic interpretation, creative composition, painterly portrait`,
+      minimal: `${prompt}, minimalist style, clean lines, simple composition, modern aesthetic, minimal portrait`
     }
 
     const enhancedPrompt = stylePrompts[style?.toLowerCase() as keyof typeof stylePrompts] || prompt
     console.log('Enhanced prompt:', enhancedPrompt)
 
-    console.log('Calling Hugging Face API...')
-    const image = await hf.textToImage({
-      inputs: enhancedPrompt,
-      model: 'black-forest-labs/FLUX.1-schnell',
-      use_cache: false
-    })
+    let image;
+
+    if (imageData) {
+      console.log('Using image-to-image generation with user photo...')
+      
+      // Convert base64 to blob for image-to-image
+      const base64Data = imageData.split(',')[1] // Remove data:image/...;base64, prefix
+      const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
+      const imageBlob = new Blob([imageBuffer], { type: 'image/png' })
+
+      try {
+        // Try image-to-image first
+        image = await hf.imageToImage({
+          inputs: imageBlob,
+          parameters: {
+            prompt: enhancedPrompt,
+            strength: 0.7, // How much to transform the original image (0.1 = subtle, 0.9 = heavy transformation)
+            guidance_scale: 7.5,
+            num_inference_steps: 20
+          },
+          model: 'stabilityai/stable-diffusion-xl-base-1.0'
+        })
+      } catch (imageToImageError) {
+        console.log('Image-to-image failed, falling back to text-to-image:', imageToImageError.message)
+        
+        // Fallback to text-to-image with more specific prompt about the person
+        const specificPrompt = `portrait of the same person from the reference image, ${enhancedPrompt}, maintaining facial features and identity`
+        
+        image = await hf.textToImage({
+          inputs: specificPrompt,
+          model: 'black-forest-labs/FLUX.1-schnell',
+          use_cache: false
+        })
+      }
+    } else {
+      console.log('No image provided, using text-to-image...')
+      image = await hf.textToImage({
+        inputs: enhancedPrompt,
+        model: 'black-forest-labs/FLUX.1-schnell',
+        use_cache: false
+      })
+    }
 
     if (!image) {
       console.error('No image returned from Hugging Face API')

@@ -106,12 +106,13 @@ const NFTMinting = () => {
     
     try {
       // Criar um prompt baseado na imagem do usuário
-      const prompt = `portrait of a person, professional headshot, high quality`;
+      const prompt = `portrait of a person, professional headshot, high quality, same person, maintaining facial features`;
       
       const { data, error } = await supabase.functions.invoke('generate-styled-avatar', {
         body: {
           prompt,
-          style: style.toLowerCase()
+          style: style.toLowerCase(),
+          imageData: avatarPreview // Enviando a imagem do usuário
         }
       });
 
