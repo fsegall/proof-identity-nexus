@@ -78,6 +78,7 @@ export const useNFTMinting = () => {
     try {
       console.log('Starting generation with style:', style);
       console.log('Image data available:', avatarPreview ? 'Yes' : 'No');
+      console.log('Image data length:', avatarPreview?.length || 0);
       
       const prompt = `Transform this portrait into ${style} style while maintaining the person's facial features and identity`;
       
@@ -94,25 +95,39 @@ export const useNFTMinting = () => {
       if (error) {
         console.error('Generation error:', error);
         
+        let errorMessage = 'Failed to generate styled avatar.';
+        
         if (error.message?.includes('timeout')) {
-          throw new Error('Generation took too long. Please try again with a different style.');
-        } else if (error.message?.includes('credits')) {
-          throw new Error('Hugging Face credits exhausted. Please check your subscription.');
-        } else if (error.message?.includes('unauthorized')) {
-          throw new Error('Invalid Hugging Face API token. Please verify your configuration.');
-        } else {
-          throw new Error('Failed to generate styled avatar.');
+          errorMessage = 'Generation took too long. Please try again with a different style.';
+        } else if (error.message?.includes('rate limit')) {
+          errorMessage = 'Too many requests. Please wait a moment and try again.';
+        } else if (error.message?.includes('unauthorized') || error.message?.includes('401')) {
+          errorMessage = 'Invalid Hugging Face API token. Please check your configuration.';
+        } else if (error.message?.includes('service unavailable') || error.message?.includes('503')) {
+          errorMessage = 'AI service is temporarily overloaded. Please try again in a few moments.';
         }
+        
+        throw new Error(errorMessage);
       }
 
       if (data?.image) {
         console.log('Successfully generated styled avatar');
         setStyledAvatar(data.image);
         setGenerationProgress('');
-        toast({
-          title: 'Avatar Styled Successfully!',
-          description: `Your photo has been transformed with the ${style} style.`
-        });
+        
+        if (data.warning) {
+          toast({
+            title: 'Avatar Generated with Fallback',
+            description: data.warning,
+            variant: 'default'
+          });
+        } else {
+          toast({
+            title: 'Avatar Styled Successfully!',
+            description: `Your photo has been transformed with the ${style} style.`
+          });
+        }
+        
         setCurrentStep(3);
       } else {
         throw new Error('No image was returned from the AI service');

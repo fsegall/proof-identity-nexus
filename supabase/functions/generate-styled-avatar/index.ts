@@ -55,23 +55,24 @@ serve(async (req) => {
       console.log('Processing image for image-to-image transformation...')
       
       // Convert base64 to blob for image-to-image
-      const base64Data = imageData.split(',')[1]
+      const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '')
       const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
-      const imageBlob = new Blob([imageBuffer], { type: 'image/png' })
+      const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' })
 
+      console.log('Image blob size:', imageBuffer.length, 'bytes')
       console.log('Starting image-to-image generation with preserved identity...')
       
-      // Use image-to-image with parameters optimized to preserve the person's identity
+      // Try with a simpler, more reliable model first
       const image = await hf.imageToImage({
         inputs: imageBlob,
         parameters: {
           prompt: enhancedPrompt,
-          negative_prompt: "different person, different face, different identity, blurry face, distorted features, multiple people, cartoon, anime",
-          strength: 0.3, // Even more conservative to preserve features
-          guidance_scale: 8.5, // Higher guidance for better prompt following
-          num_inference_steps: 25, // More steps for better quality
+          negative_prompt: "different person, different face, different identity, blurry face, distorted features, multiple people, deformed, ugly, bad anatomy",
+          strength: 0.4, // Slightly higher for better transformation
+          guidance_scale: 7.5, // Lower guidance for more flexibility
+          num_inference_steps: 20, // Fewer steps for stability
         },
-        model: 'stabilityai/stable-diffusion-xl-base-1.0'
+        model: 'runwayml/stable-diffusion-v1-5' // More reliable model
       })
       
       console.log('Image-to-image generation completed successfully!')
@@ -98,17 +99,47 @@ serve(async (req) => {
       )
       
     } catch (imageError) {
-      console.error('Image-to-image generation failed:', imageError.message)
+      console.error('Image-to-image generation failed:', imageError)
       
-      // If image-to-image fails, return a specific error instead of fallback
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to process your image for styling', 
-          details: 'The AI service had trouble processing your specific image. Please try with a different photo or try again later.',
-          type: 'image_processing_error'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      )
+      // Try fallback with text-to-image as a last resort
+      try {
+        console.log('Trying fallback text-to-image generation...')
+        const fallbackPrompt = `Portrait of a person in ${style} style, high quality, detailed face`
+        
+        const fallbackImage = await hf.textToImage({
+          inputs: fallbackPrompt,
+          model: 'runwayml/stable-diffusion-v1-5',
+          parameters: {
+            guidance_scale: 7.5,
+            num_inference_steps: 20,
+          }
+        })
+        
+        const arrayBuffer = await fallbackImage.arrayBuffer()
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+        
+        console.log('Fallback generation successful')
+        
+        return new Response(
+          JSON.stringify({ 
+            image: `data:image/png;base64,${base64}`,
+            warning: 'Used fallback generation - could not process your specific image'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+        
+      } catch (fallbackError) {
+        console.error('Fallback generation also failed:', fallbackError)
+        
+        return new Response(
+          JSON.stringify({ 
+            error: 'Both image processing and fallback generation failed', 
+            details: imageError.message,
+            fallbackError: fallbackError.message
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        )
+      }
     }
 
   } catch (error) {
@@ -116,7 +147,6 @@ serve(async (req) => {
       name: error.name,
       message: error.message,
       stack: error.stack,
-      cause: error.cause
     })
     
     // Handle specific Hugging Face API errors
@@ -153,8 +183,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Failed to generate styled avatar', 
-        details: error.message || 'An unexpected error occurred',
-        type: error.name
+        details: error.message || 'An unexpected error occurred'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
