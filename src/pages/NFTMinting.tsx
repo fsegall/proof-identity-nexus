@@ -41,7 +41,7 @@ const NFTMinting = () => {
 
   const { mint, isPending, isConfirming, isSuccess } = useIdentityNFTMint({
     address: account || '0x0',
-    tokenURI: styledAvatar || avatarPreview || ''
+    imageData: styledAvatar || avatarPreview || undefined
   });
 
   const styles = [
@@ -105,19 +105,34 @@ const NFTMinting = () => {
     setSelectedStyle(style);
     
     try {
-      // Simular geração de avatar estilizado com IA
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Criar um prompt baseado na imagem do usuário
+      const prompt = `portrait of a person, professional headshot, high quality`;
       
-      // Por enquanto, usar o mesmo avatar com um filtro visual
-      setStyledAvatar(avatarPreview);
-      
-      toast({
-        title: 'Avatar Styled Successfully!',
-        description: `Your avatar has been transformed with ${style} style.`
+      const { data, error } = await supabase.functions.invoke('generate-styled-avatar', {
+        body: {
+          prompt,
+          style: style.toLowerCase()
+        }
       });
+
+      if (error) {
+        console.error('Generation error:', error);
+        throw new Error('Failed to generate styled avatar');
+      }
+
+      if (data?.image) {
+        setStyledAvatar(data.image);
+        toast({
+          title: 'Avatar Styled Successfully!',
+          description: `Your avatar has been transformed with ${style} style.`
+        });
+        setCurrentStep(3);
+      } else {
+        throw new Error('No image data received');
+      }
       
-      setCurrentStep(3);
     } catch (error) {
+      console.error('Styling error:', error);
       toast({
         title: 'Styling Failed',
         description: 'Failed to style your avatar. Please try again.',
@@ -139,8 +154,9 @@ const NFTMinting = () => {
     }
 
     try {
-      mint();
+      await mint();
     } catch (error) {
+      console.error('Minting error:', error);
       toast({
         title: 'Minting Failed',
         description: 'Failed to mint NFT. Please try again.',
