@@ -49,7 +49,7 @@ export class ZKApiClient {
 
   // Simulate ZK proof generation locally when API is not available
   private simulateZKProof(input: ZKGenerateProofInput): ZKGenerateProofResponse {
-    console.log('🔄 Simulating ZK proof generation locally due to CORS...');
+    console.log('🔄 Simulating ZK proof generation locally due to API unavailability...');
     
     // Create a mock proof object
     const mockProof = {
@@ -97,6 +97,8 @@ export class ZKApiClient {
   }
 
   async generateProof(input: ZKGenerateProofInput): Promise<ZKGenerateProofResponse> {
+    console.log('🚀 Attempting to generate ZK proof via API...');
+    
     try {
       const response = await fetch(`${this.baseUrl}/generate-proof`, {
         method: 'POST',
@@ -105,19 +107,23 @@ export class ZKApiClient {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('✅ ZK proof generated successfully via API');
+      console.log('✅ ZK proof generated successfully via API!');
+      console.log('📊 API Response:', result);
       return result;
     } catch (error) {
-      console.log('⚠️ API not available, using local simulation for ZK proof generation');
+      console.log('⚠️ API request failed:', error);
+      console.log('🔄 Falling back to local simulation...');
       return this.simulateZKProof(input);
     }
   }
 
   async verifyProof(input: ZKVerifyInput, originalInput?: ZKGenerateProofInput): Promise<ZKVerifyResponse> {
+    console.log('🔍 Attempting to verify ZK proof via API...');
+    
     try {
       const response = await fetch(`${this.baseUrl}/verify`, {
         method: 'POST',
@@ -126,14 +132,16 @@ export class ZKApiClient {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('✅ ZK proof verified successfully via API');
+      console.log('✅ ZK proof verified successfully via API!');
+      console.log('📊 Verification result:', result);
       return result;
     } catch (error) {
-      console.log('⚠️ API not available, using local simulation for ZK proof verification');
+      console.log('⚠️ API verification failed:', error);
+      console.log('🔄 Falling back to local simulation...');
       if (originalInput) {
         return this.simulateZKVerification(input, originalInput);
       }
@@ -155,9 +163,14 @@ export class ZKApiClient {
       }
     };
 
+    console.log('🔐 Starting ZK age verification process...');
+    console.log('📊 Input data:', {
+      birthDate: new Date(birthDate * 1000).toISOString(),
+      minAge,
+      currentDate: new Date(currentDate * 1000).toISOString()
+    });
+    
     try {
-      console.log('🔐 Starting ZK age verification process...');
-      
       // First, generate the proof
       const proofResponse = await this.generateProof(proofInput);
 
@@ -170,16 +183,18 @@ export class ZKApiClient {
 
       const result = await this.verifyProof(verifyInput, proofInput);
       
-      console.log(`🎯 ZK verification result: valid=${result.valid}, isOldEnough=${result.isOldEnough}`);
+      console.log(`🎯 Final ZK verification result: valid=${result.valid}, isOldEnough=${result.isOldEnough}`);
       return result;
       
     } catch (error) {
-      console.error('❌ ZK verification failed:', error);
+      console.error('❌ ZK verification process failed:', error);
       throw error;
     }
   }
 
   async healthCheck(): Promise<{ status: string; uptime: number }> {
+    console.log('🏥 Checking API health...');
+    
     try {
       const response = await fetch(`${this.baseUrl}/health`);
       
@@ -187,10 +202,12 @@ export class ZKApiClient {
         throw new Error(`Health check failed: ${response.status}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('✅ API is healthy:', result);
+      return result;
     } catch (error) {
-      console.log('⚠️ Health check failed, API may be unavailable');
-      return { status: 'simulated', uptime: 0 };
+      console.log('⚠️ Health check failed, API may be unavailable:', error);
+      return { status: 'unavailable', uptime: 0 };
     }
   }
 }
