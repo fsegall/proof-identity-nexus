@@ -14,6 +14,9 @@ const translations = {
     // Navigation
     'nav.login': 'Login',
     'nav.getStarted': 'Get Started',
+    'nav.logout': 'Logout',
+    'nav.backToHome': 'Back to Home',
+    'nav.createAttestation': 'Create Attestation',
     
     // Hero Section
     'hero.badge': 'Powered by Zero-Knowledge Technology',
@@ -27,7 +30,7 @@ const translations = {
     'hero.web3Ready': 'Web3 Ready',
     
     // Features
-    'features.title': 'Why Choose ZK Identity?',
+    'features.title': 'Why Choose Identizy?',
     'features.subtitle': 'Revolutionary technology that puts privacy and security at the forefront of digital identity verification.',
     'features.zkProofs.title': 'Zero-Knowledge Proofs',
     'features.zkProofs.desc': 'Prove your identity without revealing personal information using cutting-edge cryptographic techniques.',
@@ -52,24 +55,69 @@ const translations = {
     
     // CTA
     'cta.title': 'Ready to Get Started?',
-    'cta.subtitle': 'Join thousands of users who trust ZK Identity for secure, private verification.',
+    'cta.subtitle': 'Join thousands of users who trust Identizy for secure, private verification.',
     'cta.button': 'Create Your Identity',
     
     // Footer
-    'footer.copyright': '© 2024 ZK Identity. Privacy-first identity verification.',
+    'footer.copyright': '© 2024 Identizy. Privacy-first identity verification.',
     
     // Create Attestation
     'createAttestation.title': 'Create Attestation',
     'createAttestation.subtitle': 'Choose the type of verification you need',
-    'createAttestation.coming': 'Coming Soon'
+    'createAttestation.coming': 'Coming Soon',
+    'createAttestation.availableNow': 'Available Now',
+    'createAttestation.zkPrivacy': 'Zero-Knowledge Privacy',
+    'createAttestation.zkPrivacyDesc': 'All attestations use advanced zero-knowledge cryptography to verify information without exposing your personal data. Your privacy is guaranteed while maintaining full verification integrity.',
+    
+    // Attestation Types
+    'attestation.age.title': 'Age Verification',
+    'attestation.age.desc': 'Prove you are over 18 without revealing your birth date',
+    'attestation.identity.title': 'Identity Verification',
+    'attestation.identity.desc': 'Verify your legal identity with government-issued documents',
+    'attestation.address.title': 'Address Verification',
+    'attestation.address.desc': 'Prove your residential address with utility bills or bank statements',
+    'attestation.income.title': 'Income Verification',
+    'attestation.income.desc': 'Verify your income level without disclosing exact amounts',
+    'attestation.education.title': 'Education Verification',
+    'attestation.education.desc': 'Prove your educational qualifications and degrees',
+    'attestation.employment.title': 'Employment Verification',
+    'attestation.employment.desc': 'Verify your employment status and professional background',
+    'attestation.property.title': 'Property Ownership',
+    'attestation.property.desc': 'Prove ownership of real estate or other valuable assets',
+    'attestation.financial.title': 'Financial Standing',
+    'attestation.financial.desc': 'Verify creditworthiness without exposing detailed financial data',
+    
+    // Wallet Connect
+    'wallet.title': 'Connect Your Wallet',
+    'wallet.subtitle': 'Choose your preferred wallet to get started with Identizy',
+    'wallet.connected': 'Wallet Connected Successfully!',
+    'wallet.connectedDesc': 'Your wallet is now connected and ready to use',
+    'wallet.account': 'Account',
+    'wallet.network': 'Connected to Ethereum Mainnet',
+    'wallet.continue': 'Continue to Onboarding',
+    'wallet.metamask': 'MetaMask',
+    'wallet.metamaskDesc': 'Connect using MetaMask browser extension',
+    'wallet.walletconnect': 'WalletConnect',
+    'wallet.walletconnectDesc': 'Connect using mobile wallet via QR code',
+    'wallet.installRequired': 'Install Required',
+    'wallet.security': 'Your Security Matters',
+    'wallet.securityDesc': 'We never store your private keys. Your wallet connection is secure and encrypted.',
+    'wallet.troubleshooting': 'Having trouble connecting?',
+    'wallet.troubleStep1': '• Make sure your wallet is unlocked',
+    'wallet.troubleStep2': '• Check that you\'re on the correct network',
+    'wallet.troubleStep3': '• Try refreshing the page and connecting again',
+    'wallet.troubleStep4': '• Ensure your wallet extension is up to date'
   },
   pt: {
     // Navigation
     'nav.login': 'Entrar',
     'nav.getStarted': 'Começar',
+    'nav.logout': 'Sair',
+    'nav.backToHome': 'Voltar ao Início',
+    'nav.createAttestation': 'Criar Atestado',
     
     // Hero Section
-    'hero.badge': 'Powered by Zero-Knowledge Technology',
+    'hero.badge': 'Tecnologia Zero-Knowledge',
     'hero.title1': 'Verifique Sua Identidade',
     'hero.title2': 'Sem Revelá-la',
     'hero.subtitle': 'Experimente o futuro da identidade digital com provas zero-knowledge. Prove que você tem mais de 18 anos sem compartilhar informações pessoais, crie NFTs únicos e mantenha total privacidade.',
@@ -80,7 +128,7 @@ const translations = {
     'hero.web3Ready': 'Pronto para Web3',
     
     // Features
-    'features.title': 'Por que Escolher ZK Identity?',
+    'features.title': 'Por que Escolher Identizy?',
     'features.subtitle': 'Tecnologia revolucionária que coloca privacidade e segurança na vanguarda da verificação de identidade digital.',
     'features.zkProofs.title': 'Provas Zero-Knowledge',
     'features.zkProofs.desc': 'Prove sua identidade sem revelar informações pessoais usando técnicas criptográficas de ponta.',
@@ -105,16 +153,58 @@ const translations = {
     
     // CTA
     'cta.title': 'Pronto para Começar?',
-    'cta.subtitle': 'Junte-se a milhares de usuários que confiam no ZK Identity para verificação segura e privada.',
+    'cta.subtitle': 'Junte-se a milhares de usuários que confiam no Identizy para verificação segura e privada.',
     'cta.button': 'Crie Sua Identidade',
     
     // Footer
-    'footer.copyright': '© 2024 ZK Identity. Verificação de identidade com privacidade em primeiro lugar.',
+    'footer.copyright': '© 2024 Identizy. Verificação de identidade com privacidade em primeiro lugar.',
     
     // Create Attestation
     'createAttestation.title': 'Criar Atestado',
     'createAttestation.subtitle': 'Escolha o tipo de verificação que você precisa',
-    'createAttestation.coming': 'Em Breve'
+    'createAttestation.coming': 'Em Breve',
+    'createAttestation.availableNow': 'Disponível Agora',
+    'createAttestation.zkPrivacy': 'Privacidade Zero-Knowledge',
+    'createAttestation.zkPrivacyDesc': 'Todos os atestados usam criptografia zero-knowledge avançada para verificar informações sem expor seus dados pessoais. Sua privacidade é garantida enquanto mantém total integridade na verificação.',
+    
+    // Attestation Types
+    'attestation.age.title': 'Verificação de Idade',
+    'attestation.age.desc': 'Prove que você tem mais de 18 anos sem revelar sua data de nascimento',
+    'attestation.identity.title': 'Verificação de Identidade',
+    'attestation.identity.desc': 'Verifique sua identidade legal com documentos emitidos pelo governo',
+    'attestation.address.title': 'Verificação de Endereço',
+    'attestation.address.desc': 'Prove seu endereço residencial com contas de utilidades ou extratos bancários',
+    'attestation.income.title': 'Verificação de Renda',
+    'attestation.income.desc': 'Verifique seu nível de renda sem divulgar valores exatos',
+    'attestation.education.title': 'Verificação de Educação',
+    'attestation.education.desc': 'Prove suas qualificações educacionais e diplomas',
+    'attestation.employment.title': 'Verificação de Emprego',
+    'attestation.employment.desc': 'Verifique seu status de emprego e histórico profissional',
+    'attestation.property.title': 'Propriedade Imobiliária',
+    'attestation.property.desc': 'Prove a propriedade de imóveis ou outros ativos valiosos',
+    'attestation.financial.title': 'Situação Financeira',
+    'attestation.financial.desc': 'Verifique a credibilidade sem expor dados financeiros detalhados',
+    
+    // Wallet Connect
+    'wallet.title': 'Conectar Sua Carteira',
+    'wallet.subtitle': 'Escolha sua carteira preferida para começar com o Identizy',
+    'wallet.connected': 'Carteira Conectada com Sucesso!',
+    'wallet.connectedDesc': 'Sua carteira está agora conectada e pronta para usar',
+    'wallet.account': 'Conta',
+    'wallet.network': 'Conectado à Rede Ethereum',
+    'wallet.continue': 'Continuar para Onboarding',
+    'wallet.metamask': 'MetaMask',
+    'wallet.metamaskDesc': 'Conectar usando a extensão MetaMask do navegador',
+    'wallet.walletconnect': 'WalletConnect',
+    'wallet.walletconnectDesc': 'Conectar usando carteira móvel via código QR',
+    'wallet.installRequired': 'Instalação Necessária',
+    'wallet.security': 'Sua Segurança Importa',
+    'wallet.securityDesc': 'Nunca armazenamos suas chaves privadas. Sua conexão de carteira é segura e criptografada.',
+    'wallet.troubleshooting': 'Tendo problemas para conectar?',
+    'wallet.troubleStep1': '• Certifique-se de que sua carteira está desbloqueada',
+    'wallet.troubleStep2': '• Verifique se você está na rede correta',
+    'wallet.troubleStep3': '• Tente atualizar a página e conectar novamente',
+    'wallet.troubleStep4': '• Certifique-se de que sua extensão de carteira está atualizada'
   }
 };
 

@@ -96,7 +96,7 @@ const Landing = () => {
             className="flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
-            Create Attestation
+            {t('nav.createAttestation')}
           </Button>
           {user ? (
             <Button 
@@ -105,7 +105,7 @@ const Landing = () => {
               className="flex items-center gap-2"
             >
               <LogOut className="h-4 w-4" />
-              Logout
+              {t('nav.logout')}
             </Button>
           ) : (
             <>

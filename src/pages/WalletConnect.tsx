@@ -1,9 +1,11 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useWallet } from '@/hooks/useWallet';
 import { 
   Wallet, 
@@ -17,22 +19,23 @@ import {
 
 const WalletConnect = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { isConnected, account, connectWallet, isLoading } = useWallet();
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
 
   const walletOptions = [
     {
       id: 'metamask',
-      name: 'MetaMask',
-      description: 'Connect using MetaMask browser extension',
+      name: t('wallet.metamask'),
+      description: t('wallet.metamaskDesc'),
       icon: Chrome,
       color: 'from-orange-500 to-yellow-500',
       installed: true
     },
     {
       id: 'walletconnect',
-      name: 'WalletConnect',
-      description: 'Connect using mobile wallet via QR code',
+      name: t('wallet.walletconnect'),
+      description: t('wallet.walletconnectDesc'),
       icon: Smartphone,
       color: 'from-blue-500 to-indigo-500',
       installed: true
@@ -57,13 +60,13 @@ const WalletConnect = () => {
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Home
+          {t('nav.backToHome')}
         </Button>
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-lg flex items-center justify-center">
             <Shield className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold">ZK Identity</span>
+          <span className="text-xl font-bold">Identizy</span>
         </div>
       </header>
 
@@ -78,16 +81,16 @@ const WalletConnect = () => {
                   <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
                 </div>
                 <CardTitle className="text-green-800 dark:text-green-400">
-                  Wallet Connected Successfully!
+                  {t('wallet.connected')}
                 </CardTitle>
                 <CardDescription className="text-green-600 dark:text-green-500">
-                  Your wallet is now connected and ready to use
+                  {t('wallet.connectedDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Account</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t('wallet.account')}</span>
                     <Button variant="ghost" size="sm">
                       <ExternalLink className="h-4 w-4" />
                     </Button>
@@ -95,13 +98,13 @@ const WalletConnect = () => {
                   <p className="font-mono text-sm mt-1 break-all">{account}</p>
                 </div>
                 <StatusBadge status="success">
-                  Connected to Ethereum Mainnet
+                  {t('wallet.network')}
                 </StatusBadge>
                 <Button 
                   onClick={() => navigate('/onboarding')}
                   className="w-full btn-gradient"
                 >
-                  Continue to Onboarding
+                  {t('wallet.continue')}
                 </Button>
               </CardContent>
             </Card>
@@ -111,9 +114,9 @@ const WalletConnect = () => {
                 <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse-glow">
                   <Wallet className="h-8 w-8 text-white" />
                 </div>
-                <CardTitle className="text-2xl">Connect Your Wallet</CardTitle>
+                <CardTitle className="text-2xl">{t('wallet.title')}</CardTitle>
                 <CardDescription>
-                  Choose your preferred wallet to get started with ZK Identity
+                  {t('wallet.subtitle')}
                 </CardDescription>
               </CardHeader>
               
@@ -135,7 +138,7 @@ const WalletConnect = () => {
                           <span className="font-semibold">{wallet.name}</span>
                           {!wallet.installed && (
                             <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
-                              Install Required
+                              {t('wallet.installRequired')}
                             </span>
                           )}
                         </div>
@@ -159,10 +162,10 @@ const WalletConnect = () => {
                     <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                     <div>
                       <h4 className="font-medium text-blue-800 dark:text-blue-400 mb-1">
-                        Your Security Matters
+                        {t('wallet.security')}
                       </h4>
                       <p className="text-sm text-blue-700 dark:text-blue-300">
-                        We never store your private keys. Your wallet connection is secure and encrypted.
+                        {t('wallet.securityDesc')}
                       </p>
                     </div>
                   </div>
@@ -171,13 +174,13 @@ const WalletConnect = () => {
                 {/* Troubleshooting */}
                 <details className="mt-4">
                   <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    Having trouble connecting?
+                    {t('wallet.troubleshooting')}
                   </summary>
                   <div className="mt-2 text-sm text-muted-foreground space-y-2">
-                    <p>• Make sure your wallet is unlocked</p>
-                    <p>• Check that you're on the correct network</p>
-                    <p>• Try refreshing the page and connecting again</p>
-                    <p>• Ensure your wallet extension is up to date</p>
+                    <p>{t('wallet.troubleStep1')}</p>
+                    <p>{t('wallet.troubleStep2')}</p>
+                    <p>{t('wallet.troubleStep3')}</p>
+                    <p>{t('wallet.troubleStep4')}</p>
                   </div>
                 </details>
               </CardContent>

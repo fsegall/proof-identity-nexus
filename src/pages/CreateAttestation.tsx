@@ -24,8 +24,8 @@ const CreateAttestation = () => {
   const attestationTypes = [
     {
       id: 'age-verification',
-      title: 'Age Verification',
-      description: 'Prove you are over 18 without revealing your birth date',
+      title: t('attestation.age.title'),
+      description: t('attestation.age.desc'),
       icon: Calendar,
       color: 'from-blue-500 to-cyan-500',
       available: true,
@@ -33,56 +33,56 @@ const CreateAttestation = () => {
     },
     {
       id: 'identity-verification',
-      title: 'Identity Verification',
-      description: 'Verify your legal identity with government-issued documents',
+      title: t('attestation.identity.title'),
+      description: t('attestation.identity.desc'),
       icon: User,
       color: 'from-purple-500 to-pink-500',
       available: false
     },
     {
       id: 'address-verification',
-      title: 'Address Verification',
-      description: 'Prove your residential address with utility bills or bank statements',
+      title: t('attestation.address.title'),
+      description: t('attestation.address.desc'),
       icon: MapPin,
       color: 'from-green-500 to-emerald-500',
       available: false
     },
     {
       id: 'income-verification',
-      title: 'Income Verification',
-      description: 'Verify your income level without disclosing exact amounts',
+      title: t('attestation.income.title'),
+      description: t('attestation.income.desc'),
       icon: CreditCard,
       color: 'from-orange-500 to-red-500',
       available: false
     },
     {
       id: 'education-verification',
-      title: 'Education Verification',
-      description: 'Prove your educational qualifications and degrees',
+      title: t('attestation.education.title'),
+      description: t('attestation.education.desc'),
       icon: GraduationCap,
       color: 'from-indigo-500 to-purple-500',
       available: false
     },
     {
       id: 'employment-verification',
-      title: 'Employment Verification',
-      description: 'Verify your employment status and professional background',
+      title: t('attestation.employment.title'),
+      description: t('attestation.employment.desc'),
       icon: Briefcase,
       color: 'from-teal-500 to-cyan-500',
       available: false
     },
     {
       id: 'property-ownership',
-      title: 'Property Ownership',
-      description: 'Prove ownership of real estate or other valuable assets',
+      title: t('attestation.property.title'),
+      description: t('attestation.property.desc'),
       icon: Home,
       color: 'from-amber-500 to-orange-500',
       available: false
     },
     {
       id: 'financial-standing',
-      title: 'Financial Standing',
-      description: 'Verify creditworthiness without exposing detailed financial data',
+      title: t('attestation.financial.title'),
+      description: t('attestation.financial.desc'),
       icon: FileText,
       color: 'from-rose-500 to-pink-500',
       available: false
@@ -109,7 +109,7 @@ const CreateAttestation = () => {
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Back to Home
+                {t('nav.backToHome')}
               </Button>
             </div>
             
@@ -117,7 +117,7 @@ const CreateAttestation = () => {
               <div className="w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-lg flex items-center justify-center">
                 <Shield className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold">ZK Identity</span>
+              <span className="text-xl font-bold">Identizy</span>
             </div>
           </div>
         </div>
@@ -165,7 +165,7 @@ const CreateAttestation = () => {
                 {attestation.available ? (
                   <div className="flex items-center text-primary text-sm font-medium">
                     <Shield className="h-4 w-4 mr-1" />
-                    Available Now
+                    {t('createAttestation.availableNow')}
                   </div>
                 ) : (
                   <div className="flex items-center text-muted-foreground text-sm">
@@ -187,11 +187,9 @@ const CreateAttestation = () => {
           <Card className="max-w-2xl mx-auto bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
             <CardContent className="p-8">
               <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Zero-Knowledge Privacy</h3>
+              <h3 className="text-xl font-semibold mb-2">{t('createAttestation.zkPrivacy')}</h3>
               <p className="text-muted-foreground">
-                All attestations use advanced zero-knowledge cryptography to verify information 
-                without exposing your personal data. Your privacy is guaranteed while maintaining 
-                full verification integrity.
+                {t('createAttestation.zkPrivacyDesc')}
               </p>
             </CardContent>
           </Card>
