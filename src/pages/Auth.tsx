@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,7 @@ const Auth = () => {
 
   // Redirect if already authenticated
   if (!loading && user) {
-    navigate('/onboarding');
+    navigate('/');
     return null;
   }
 
@@ -62,7 +63,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/onboarding`
+          redirectTo: `${window.location.origin}/`
         }
       });
 
@@ -123,7 +124,8 @@ const Auth = () => {
         description: 'Bem-vindo de volta',
       });
 
-      // Navigation will happen automatically via useAuth hook
+      // Redirect to home page after successful login
+      navigate('/');
     } catch (err: any) {
       console.error('Unexpected login error:', err);
       toast({
@@ -232,7 +234,7 @@ const Auth = () => {
           <div className="w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-lg flex items-center justify-center">
             <Shield className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold">ZK Identity</span>
+          <span className="text-xl font-bold">Identizy</span>
         </div>
       </header>
 
