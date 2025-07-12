@@ -53,23 +53,35 @@ export const useNFTMinting = () => {
       
       const reader = new FileReader();
       reader.onload = (e) => {
-        setAvatarPreview(e.target?.result as string);
+        const result = e.target?.result as string;
+        setAvatarPreview(result);
+        console.log('Avatar preview set:', result ? 'Data loaded successfully' : 'Failed to load data');
       };
       reader.readAsDataURL(file);
     }
   };
 
   const generateStyledAvatar = async (style: string) => {
-    if (!avatarPreview) return;
+    if (!avatarPreview) {
+      toast({
+        title: 'No Image Selected',
+        description: 'Please upload an image first',
+        variant: 'destructive'
+      });
+      return;
+    }
     
     setIsGeneratingStyle(true);
     setSelectedStyle(style);
-    setGenerationProgress('Starting generation...');
+    setGenerationProgress('Processing your image...');
     
     try {
-      const prompt = `portrait of a person, professional headshot, high quality, same person, maintaining facial features`;
+      console.log('Starting generation with style:', style);
+      console.log('Image data available:', avatarPreview ? 'Yes' : 'No');
       
-      setGenerationProgress('Sending image for processing...');
+      const prompt = `Transform this portrait into ${style} style while maintaining the person's facial features and identity`;
+      
+      setGenerationProgress('Sending your image for AI processing...');
       
       const { data, error } = await supabase.functions.invoke('generate-styled-avatar', {
         body: {
@@ -94,15 +106,16 @@ export const useNFTMinting = () => {
       }
 
       if (data?.image) {
+        console.log('Successfully generated styled avatar');
         setStyledAvatar(data.image);
         setGenerationProgress('');
         toast({
           title: 'Avatar Styled Successfully!',
-          description: `Your avatar has been transformed with the ${style} style.`
+          description: `Your photo has been transformed with the ${style} style.`
         });
         setCurrentStep(3);
       } else {
-        throw new Error('No image was returned');
+        throw new Error('No image was returned from the AI service');
       }
       
     } catch (error) {
@@ -141,8 +154,11 @@ export const useNFTMinting = () => {
   };
 
   const skipStyling = () => {
-    setStyledAvatar(avatarPreview);
-    setCurrentStep(3);
+    if (avatarPreview) {
+      setStyledAvatar(avatarPreview);
+      setCurrentStep(3);
+      console.log('Skipping styling, using original image');
+    }
   };
 
   return {
