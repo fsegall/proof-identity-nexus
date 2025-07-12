@@ -18,10 +18,10 @@ serve(async (req) => {
 
     console.log('Request received with:', { prompt, style, hasImageData: !!imageData })
 
-    if (!prompt) {
-      console.error('Missing prompt in request')
+    if (!prompt || !imageData) {
+      console.error('Missing required fields:', { hasPrompt: !!prompt, hasImageData: !!imageData })
       return new Response(
-        JSON.stringify({ error: 'Prompt is required' }),
+        JSON.stringify({ error: 'Both prompt and imageData are required for styling' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
@@ -38,88 +38,79 @@ serve(async (req) => {
     console.log('Initializing Hugging Face client...')
     const hf = new HfInference(hfToken)
 
-    // Style-specific prompt enhancements
+    // Enhanced prompts that emphasize preserving the person's features
     const stylePrompts = {
-      cyberpunk: `${style} style portrait, futuristic neon aesthetic, maintain facial features`,
-      fantasy: `${style} style portrait, magical medieval aesthetic, maintain facial features`,
-      artistic: `${style} style portrait, colorful artistic interpretation, maintain facial features`,
-      minimal: `${style} style portrait, clean minimalist aesthetic, maintain facial features`
+      cyberpunk: `Transform this person into cyberpunk style: futuristic neon lighting, cyberpunk aesthetic, digital enhancements, but keep the exact same face, facial features, and identity of the person in the image`,
+      fantasy: `Transform this person into fantasy style: medieval fantasy aesthetic, magical elements, fantasy clothing and background, but preserve the exact same face, facial features, and identity of the person`,
+      artistic: `Transform this person into artistic style: painterly artistic interpretation, colorful art style, but maintain the exact same face, facial features, and identity of the person in the image`,
+      minimal: `Transform this person into minimal style: clean minimalist aesthetic, simple background, but keep the exact same face, facial features, and identity of the person`
     }
 
-    const enhancedPrompt = stylePrompts[style?.toLowerCase() as keyof typeof stylePrompts] || `${style} style portrait, maintain facial features`
+    const enhancedPrompt = stylePrompts[style?.toLowerCase() as keyof typeof stylePrompts] || 
+      `Transform this person into ${style} style while keeping the exact same face, facial features, and identity`
+    
     console.log('Enhanced prompt:', enhancedPrompt)
 
-    let image;
-
-    if (imageData) {
-      console.log('Using image-to-image generation...')
+    try {
+      console.log('Processing image for image-to-image transformation...')
       
-      try {
-        // Convert base64 to blob for image-to-image
-        const base64Data = imageData.split(',')[1]
-        const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
-        const imageBlob = new Blob([imageBuffer], { type: 'image/png' })
+      // Convert base64 to blob for image-to-image
+      const base64Data = imageData.split(',')[1]
+      const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
+      const imageBlob = new Blob([imageBuffer], { type: 'image/png' })
 
-        console.log('Attempting image-to-image with enhanced parameters...')
-        
-        // Use a more conservative approach for better results
-        image = await hf.imageToImage({
-          inputs: imageBlob,
-          parameters: {
-            prompt: enhancedPrompt,
-            strength: 0.4, // More conservative to preserve features
-            guidance_scale: 7.5,
-            num_inference_steps: 20
-          },
-          model: 'stabilityai/stable-diffusion-xl-base-1.0'
-        })
-        
-        console.log('Image-to-image generation successful!')
-        
-      } catch (imageToImageError) {
-        console.log('Image-to-image failed, trying text-to-image fallback:', imageToImageError.message)
-        
-        // Fallback to text-to-image with a descriptive prompt
-        const fallbackPrompt = `portrait of a person in ${style} style, high quality, professional headshot`
-        
-        image = await hf.textToImage({
-          inputs: fallbackPrompt,
-          model: 'black-forest-labs/FLUX.1-schnell',
-          use_cache: false
-        })
-        
-        console.log('Fallback text-to-image generation successful!')
-      }
-    } else {
-      console.log('No image provided, using text-to-image...')
+      console.log('Starting image-to-image generation with preserved identity...')
       
-      image = await hf.textToImage({
-        inputs: enhancedPrompt,
-        model: 'black-forest-labs/FLUX.1-schnell',
-        use_cache: false
+      // Use image-to-image with parameters optimized to preserve the person's identity
+      const image = await hf.imageToImage({
+        inputs: imageBlob,
+        parameters: {
+          prompt: enhancedPrompt,
+          negative_prompt: "different person, different face, different identity, blurry face, distorted features, multiple people, cartoon, anime",
+          strength: 0.3, // Even more conservative to preserve features
+          guidance_scale: 8.5, // Higher guidance for better prompt following
+          num_inference_steps: 25, // More steps for better quality
+        },
+        model: 'stabilityai/stable-diffusion-xl-base-1.0'
       })
-    }
+      
+      console.log('Image-to-image generation completed successfully!')
 
-    if (!image) {
-      console.error('No image returned from Hugging Face API')
+      if (!image) {
+        console.error('No image returned from Hugging Face API')
+        return new Response(
+          JSON.stringify({ error: 'Failed to generate image - no response from AI' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        )
+      }
+
+      console.log('Image generated successfully, converting to base64...')
+      
+      // Convert the blob to a base64 string
+      const arrayBuffer = await image.arrayBuffer()
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+
+      console.log('Image conversion completed, sending response')
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to generate image - no response from AI' }),
+        JSON.stringify({ image: `data:image/png;base64,${base64}` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+      
+    } catch (imageError) {
+      console.error('Image-to-image generation failed:', imageError.message)
+      
+      // If image-to-image fails, return a specific error instead of fallback
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to process your image for styling', 
+          details: 'The AI service had trouble processing your specific image. Please try with a different photo or try again later.',
+          type: 'image_processing_error'
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
 
-    console.log('Image generated successfully, converting to base64...')
-    
-    // Convert the blob to a base64 string
-    const arrayBuffer = await image.arrayBuffer()
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-
-    console.log('Image conversion completed, sending response')
-    
-    return new Response(
-      JSON.stringify({ image: `data:image/png;base64,${base64}` }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
   } catch (error) {
     console.error('Detailed error:', {
       name: error.name,
