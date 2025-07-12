@@ -60,36 +60,72 @@ serve(async (req) => {
       const imageBlob = new Blob([imageBuffer], { type: 'image/png' })
 
       try {
-        // Try image-to-image first
-        image = await hf.imageToImage({
-          inputs: imageBlob,
-          parameters: {
-            prompt: enhancedPrompt,
-            strength: 0.7, // How much to transform the original image (0.1 = subtle, 0.9 = heavy transformation)
-            guidance_scale: 7.5,
-            num_inference_steps: 20
-          },
-          model: 'stabilityai/stable-diffusion-xl-base-1.0'
+        console.log('Attempting image-to-image with Stable Diffusion XL...')
+        
+        // Create a timeout promise
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
         })
+
+        // Race between the API call and timeout
+        image = await Promise.race([
+          hf.imageToImage({
+            inputs: imageBlob,
+            parameters: {
+              prompt: enhancedPrompt,
+              strength: 0.75, // Slightly higher for better style transfer
+              guidance_scale: 7.5,
+              num_inference_steps: 20
+            },
+            model: 'stabilityai/stable-diffusion-xl-base-1.0'
+          }),
+          timeoutPromise
+        ])
+        
+        console.log('Image-to-image generation successful!')
+        
       } catch (imageToImageError) {
         console.log('Image-to-image failed, falling back to text-to-image:', imageToImageError.message)
         
         // Fallback to text-to-image with more specific prompt about the person
         const specificPrompt = `portrait of the same person from the reference image, ${enhancedPrompt}, maintaining facial features and identity`
         
-        image = await hf.textToImage({
-          inputs: specificPrompt,
-          model: 'black-forest-labs/FLUX.1-schnell',
-          use_cache: false
-        })
+        try {
+          const fallbackTimeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Fallback request timeout after 25 seconds')), 25000)
+          })
+
+          image = await Promise.race([
+            hf.textToImage({
+              inputs: specificPrompt,
+              model: 'black-forest-labs/FLUX.1-schnell',
+              use_cache: false
+            }),
+            fallbackTimeoutPromise
+          ])
+          
+          console.log('Fallback text-to-image generation successful!')
+          
+        } catch (fallbackError) {
+          console.error('Both image-to-image and fallback failed:', fallbackError.message)
+          throw new Error(`Generation failed: ${fallbackError.message}`)
+        }
       }
     } else {
       console.log('No image provided, using text-to-image...')
-      image = await hf.textToImage({
-        inputs: enhancedPrompt,
-        model: 'black-forest-labs/FLUX.1-schnell',
-        use_cache: false
+      
+      const textTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Text-to-image timeout after 25 seconds')), 25000)
       })
+
+      image = await Promise.race([
+        hf.textToImage({
+          inputs: enhancedPrompt,
+          model: 'black-forest-labs/FLUX.1-schnell',
+          use_cache: false
+        }),
+        textTimeoutPromise
+      ])
     }
 
     if (!image) {
@@ -128,6 +164,16 @@ serve(async (req) => {
           details: 'Please check your Hugging Face subscription status'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
+      )
+    }
+    
+    if (error.message?.includes('timeout')) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Generation timeout', 
+          details: 'The AI took too long to generate the image. Please try again.'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 408 }
       )
     }
     

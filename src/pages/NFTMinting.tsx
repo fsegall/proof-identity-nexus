@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -35,6 +34,7 @@ const NFTMinting = () => {
   const [styledAvatar, setStyledAvatar] = useState<string | null>(null);
   const [isGeneratingStyle, setIsGeneratingStyle] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string>('');
+  const [generationProgress, setGenerationProgress] = useState<string>('');
 
   const { user, loading: authLoading } = useAuth();
   const { account } = useWallet();
@@ -103,10 +103,13 @@ const NFTMinting = () => {
     
     setIsGeneratingStyle(true);
     setSelectedStyle(style);
+    setGenerationProgress('Iniciando geração...');
     
     try {
       // Criar um prompt baseado na imagem do usuário
       const prompt = `portrait of a person, professional headshot, high quality, same person, maintaining facial features`;
+      
+      setGenerationProgress('Enviando imagem para processamento...');
       
       const { data, error } = await supabase.functions.invoke('generate-styled-avatar', {
         body: {
@@ -118,25 +121,37 @@ const NFTMinting = () => {
 
       if (error) {
         console.error('Generation error:', error);
-        throw new Error('Failed to generate styled avatar');
+        
+        // Handle specific error types
+        if (error.message?.includes('timeout')) {
+          throw new Error('A geração demorou muito. Tente novamente com um estilo diferente.');
+        } else if (error.message?.includes('credits')) {
+          throw new Error('Créditos do Hugging Face esgotados. Verifique sua assinatura.');
+        } else if (error.message?.includes('unauthorized')) {
+          throw new Error('Token do Hugging Face inválido. Verifique sua configuração.');
+        } else {
+          throw new Error('Falha na geração do avatar estilizado.');
+        }
       }
 
       if (data?.image) {
         setStyledAvatar(data.image);
+        setGenerationProgress('');
         toast({
-          title: 'Avatar Styled Successfully!',
-          description: `Your avatar has been transformed with ${style} style.`
+          title: 'Avatar Estilizado com Sucesso!',
+          description: `Seu avatar foi transformado com o estilo ${style}.`
         });
         setCurrentStep(3);
       } else {
-        throw new Error('No image data received');
+        throw new Error('Nenhuma imagem foi retornada');
       }
       
     } catch (error) {
       console.error('Styling error:', error);
+      setGenerationProgress('');
       toast({
-        title: 'Styling Failed',
-        description: 'Failed to style your avatar. Please try again.',
+        title: 'Falha na Estilização',
+        description: error.message || 'Falha ao estilizar seu avatar. Tente novamente.',
         variant: 'destructive'
       });
     } finally {
@@ -310,18 +325,21 @@ const NFTMinting = () => {
                   {isGeneratingStyle && (
                     <div className="text-center p-6 bg-muted/20 rounded-lg">
                       <LoadingSpinner size="lg" className="mx-auto mb-4" />
-                      <p className="font-medium">Generating {selectedStyle} Style...</p>
-                      <p className="text-sm text-muted-foreground">This may take a few moments</p>
+                      <p className="font-medium">Gerando Estilo {selectedStyle}...</p>
+                      {generationProgress && (
+                        <p className="text-sm text-muted-foreground mt-2">{generationProgress}</p>
+                      )}
+                      <p className="text-sm text-muted-foreground mt-1">Isso pode levar alguns momentos</p>
                     </div>
                   )}
                   
                   <div className="flex justify-between pt-6 border-t">
                     <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                      Back
+                      Voltar
                     </Button>
                     <div className="flex gap-2">
                       <Button variant="outline" onClick={skipStyling}>
-                        Skip Styling
+                        Pular Estilização
                       </Button>
                     </div>
                   </div>
