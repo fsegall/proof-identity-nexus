@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIdentityNFTMint } from '@/hooks/useIdentityNFT';
@@ -73,16 +72,17 @@ export const useNFTMinting = () => {
     
     setIsGeneratingStyle(true);
     setSelectedStyle(style);
-    setGenerationProgress('Processing your image...');
+    setGenerationProgress('Preparing your image for AI styling...');
     
     try {
-      console.log('Starting generation with style:', style);
+      console.log('=== STARTING AVATAR STYLING ===');
+      console.log('Style:', style);
       console.log('Image data available:', avatarPreview ? 'Yes' : 'No');
       console.log('Image data length:', avatarPreview?.length || 0);
       
       const prompt = `Transform this portrait into ${style} style while maintaining the person's facial features and identity`;
       
-      setGenerationProgress('Sending your image for AI processing...');
+      setGenerationProgress('Sending to AI service...');
       
       const { data, error } = await supabase.functions.invoke('generate-styled-avatar', {
         body: {
@@ -92,26 +92,32 @@ export const useNFTMinting = () => {
         }
       });
 
+      console.log('Edge function response:', { data, error });
+
       if (error) {
-        console.error('Generation error:', error);
+        console.error('=== EDGE FUNCTION ERROR ===');
+        console.error('Error:', error);
         
         let errorMessage = 'Failed to generate styled avatar.';
         
-        if (error.message?.includes('timeout')) {
-          errorMessage = 'Generation took too long. Please try again with a different style.';
-        } else if (error.message?.includes('rate limit')) {
+        // Handle specific error types
+        if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
+          errorMessage = 'API authentication failed. Please check if your Hugging Face token has proper permissions (write/inference access required).';
+        } else if (error.message?.includes('timeout') || error.message?.includes('408')) {
+          errorMessage = 'Generation took too long. Try again or choose a different style.';
+        } else if (error.message?.includes('rate limit') || error.message?.includes('429')) {
           errorMessage = 'Too many requests. Please wait a moment and try again.';
-        } else if (error.message?.includes('unauthorized') || error.message?.includes('401')) {
-          errorMessage = 'Invalid Hugging Face API token. Please check your configuration.';
         } else if (error.message?.includes('service unavailable') || error.message?.includes('503')) {
           errorMessage = 'AI service is temporarily overloaded. Please try again in a few moments.';
+        } else if (error.message?.includes('Invalid image data')) {
+          errorMessage = 'There was an issue processing your image. Try uploading a different photo.';
         }
         
         throw new Error(errorMessage);
       }
 
       if (data?.image) {
-        console.log('Successfully generated styled avatar');
+        console.log('✅ Successfully generated styled avatar');
         setStyledAvatar(data.image);
         setGenerationProgress('');
         
@@ -134,7 +140,8 @@ export const useNFTMinting = () => {
       }
       
     } catch (error) {
-      console.error('Styling error:', error);
+      console.error('=== STYLING ERROR ===');
+      console.error('Error:', error);
       setGenerationProgress('');
       toast({
         title: 'Styling Failed',

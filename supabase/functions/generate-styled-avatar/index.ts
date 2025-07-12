@@ -16,7 +16,10 @@ serve(async (req) => {
   try {
     const { prompt, style, imageData } = await req.json()
 
-    console.log('Request received with:', { prompt, style, hasImageData: !!imageData })
+    console.log('=== AVATAR STYLING REQUEST ===')
+    console.log('Style:', style)
+    console.log('Has imageData:', !!imageData)
+    console.log('Prompt:', prompt)
 
     if (!prompt || !imageData) {
       console.error('Missing required fields:', { hasPrompt: !!prompt, hasImageData: !!imageData })
@@ -35,155 +38,130 @@ serve(async (req) => {
       )
     }
 
+    console.log('Token available:', hfToken.substring(0, 10) + '...')
     console.log('Initializing Hugging Face client...')
     const hf = new HfInference(hfToken)
 
-    // Enhanced prompts that emphasize preserving the person's features
+    // Process the base64 image data
+    console.log('Processing image data...')
+    let base64Data
+    try {
+      base64Data = imageData.includes(',') ? imageData.split(',')[1] : imageData
+      console.log('Base64 data length:', base64Data.length)
+    } catch (error) {
+      console.error('Error processing base64 data:', error)
+      return new Response(
+        JSON.stringify({ error: 'Invalid image data format' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
+    // Convert to blob
+    let imageBlob
+    try {
+      const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
+      imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' })
+      console.log('Image blob created, size:', imageBuffer.length, 'bytes')
+    } catch (error) {
+      console.error('Error creating image blob:', error)
+      return new Response(
+        JSON.stringify({ error: 'Failed to process image data' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
+    // Enhanced prompts for better style preservation
     const stylePrompts = {
-      cyberpunk: `Transform this person into cyberpunk style: futuristic neon lighting, cyberpunk aesthetic, digital enhancements, but keep the exact same face, facial features, and identity of the person in the image`,
-      fantasy: `Transform this person into fantasy style: medieval fantasy aesthetic, magical elements, fantasy clothing and background, but preserve the exact same face, facial features, and identity of the person`,
-      artistic: `Transform this person into artistic style: painterly artistic interpretation, colorful art style, but maintain the exact same face, facial features, and identity of the person in the image`,
-      minimal: `Transform this person into minimal style: clean minimalist aesthetic, simple background, but keep the exact same face, facial features, and identity of the person`
+      cyberpunk: `Transform this portrait into cyberpunk style: neon lighting, futuristic aesthetic, cyberpunk elements, but preserve the exact same person's face and features`,
+      fantasy: `Transform this portrait into fantasy style: magical medieval aesthetic, fantasy elements, but keep the exact same person's face and identity`,
+      artistic: `Transform this portrait into artistic painterly style: colorful art interpretation, but maintain the exact same person's face and features`,
+      minimal: `Transform this portrait into minimal clean style: simple aesthetic, clean background, but preserve the exact same person's face and identity`
     }
 
     const enhancedPrompt = stylePrompts[style?.toLowerCase() as keyof typeof stylePrompts] || 
-      `Transform this person into ${style} style while keeping the exact same face, facial features, and identity`
+      `Transform this portrait into ${style} style while preserving the exact same person's face and identity`
     
-    console.log('Enhanced prompt:', enhancedPrompt)
+    console.log('Final prompt:', enhancedPrompt)
 
     try {
-      console.log('Processing image for image-to-image transformation...')
+      console.log('Starting image-to-image generation...')
       
-      // Convert base64 to blob for image-to-image
-      const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '')
-      const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
-      const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' })
-
-      console.log('Image blob size:', imageBuffer.length, 'bytes')
-      console.log('Starting image-to-image generation with preserved identity...')
-      
-      // Try with a simpler, more reliable model first
       const image = await hf.imageToImage({
         inputs: imageBlob,
         parameters: {
           prompt: enhancedPrompt,
-          negative_prompt: "different person, different face, different identity, blurry face, distorted features, multiple people, deformed, ugly, bad anatomy",
-          strength: 0.4, // Slightly higher for better transformation
-          guidance_scale: 7.5, // Lower guidance for more flexibility
-          num_inference_steps: 20, // Fewer steps for stability
+          negative_prompt: "different person, different face, blurry, distorted, multiple people, deformed, bad anatomy, low quality",
+          strength: 0.35,
+          guidance_scale: 7.0,
+          num_inference_steps: 25,
         },
-        model: 'runwayml/stable-diffusion-v1-5' // More reliable model
+        model: 'runwayml/stable-diffusion-v1-5'
       })
       
-      console.log('Image-to-image generation completed successfully!')
+      console.log('Image generation completed successfully!')
 
       if (!image) {
         console.error('No image returned from Hugging Face API')
         return new Response(
-          JSON.stringify({ error: 'Failed to generate image - no response from AI' }),
+          JSON.stringify({ error: 'No image generated by AI service' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
         )
       }
 
-      console.log('Image generated successfully, converting to base64...')
-      
-      // Convert the blob to a base64 string
+      console.log('Converting result to base64...')
       const arrayBuffer = await image.arrayBuffer()
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+      const base64Result = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
 
-      console.log('Image conversion completed, sending response')
+      console.log('=== SUCCESS ===')
+      console.log('Generated image size:', arrayBuffer.byteLength, 'bytes')
       
       return new Response(
-        JSON.stringify({ image: `data:image/png;base64,${base64}` }),
+        JSON.stringify({ image: `data:image/png;base64,${base64Result}` }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
       
     } catch (imageError) {
-      console.error('Image-to-image generation failed:', imageError)
-      
-      // Try fallback with text-to-image as a last resort
-      try {
-        console.log('Trying fallback text-to-image generation...')
-        const fallbackPrompt = `Portrait of a person in ${style} style, high quality, detailed face`
-        
-        const fallbackImage = await hf.textToImage({
-          inputs: fallbackPrompt,
-          model: 'runwayml/stable-diffusion-v1-5',
-          parameters: {
-            guidance_scale: 7.5,
-            num_inference_steps: 20,
-          }
-        })
-        
-        const arrayBuffer = await fallbackImage.arrayBuffer()
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-        
-        console.log('Fallback generation successful')
-        
-        return new Response(
-          JSON.stringify({ 
-            image: `data:image/png;base64,${base64}`,
-            warning: 'Used fallback generation - could not process your specific image'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-        
-      } catch (fallbackError) {
-        console.error('Fallback generation also failed:', fallbackError)
-        
-        return new Response(
-          JSON.stringify({ 
-            error: 'Both image processing and fallback generation failed', 
-            details: imageError.message,
-            fallbackError: fallbackError.message
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-        )
+      console.error('=== IMAGE GENERATION ERROR ===')
+      console.error('Error name:', imageError.name)
+      console.error('Error message:', imageError.message)
+      console.error('Full error:', imageError)
+
+      // Provide specific error messages based on the error type
+      let errorMessage = 'Image generation failed'
+      let statusCode = 500
+
+      if (imageError.message?.includes('401') || imageError.message?.includes('unauthorized')) {
+        errorMessage = 'Invalid or expired Hugging Face API token. Please check your token permissions.'
+        statusCode = 401
+      } else if (imageError.message?.includes('429') || imageError.message?.includes('rate limit')) {
+        errorMessage = 'API rate limit exceeded. Please wait and try again.'
+        statusCode = 429
+      } else if (imageError.message?.includes('503') || imageError.message?.includes('service unavailable')) {
+        errorMessage = 'AI service temporarily unavailable. Please try again in a few moments.'
+        statusCode = 503
+      } else if (imageError.message?.includes('timeout')) {
+        errorMessage = 'Generation timeout. Please try again with a simpler style.'
+        statusCode = 408
       }
+
+      return new Response(
+        JSON.stringify({ 
+          error: errorMessage,
+          details: imageError.message,
+          code: imageError.name
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: statusCode }
+      )
     }
 
   } catch (error) {
-    console.error('Detailed error:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-    })
+    console.error('=== GENERAL ERROR ===')
+    console.error('Error:', error)
     
-    // Handle specific Hugging Face API errors
-    if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid Hugging Face API token', 
-          details: 'Please verify your API token is correct'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      )
-    }
-    
-    if (error.message?.includes('429') || error.message?.includes('rate limit')) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Rate limit exceeded', 
-          details: 'Too many requests. Please wait and try again.'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
-      )
-    }
-    
-    if (error.message?.includes('503') || error.message?.includes('service unavailable')) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Service temporarily unavailable', 
-          details: 'The AI service is currently overloaded. Please try again in a few moments.'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
-      )
-    }
-
     return new Response(
       JSON.stringify({ 
-        error: 'Failed to generate styled avatar', 
-        details: error.message || 'An unexpected error occurred'
+        error: 'Unexpected error occurred', 
+        details: error.message || 'Unknown error'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
