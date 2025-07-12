@@ -38,15 +38,15 @@ serve(async (req) => {
     console.log('Initializing Hugging Face client...')
     const hf = new HfInference(hfToken)
 
-    // Style-specific prompt enhancements
+    // Style-specific prompt enhancements - mais específicos para manter a pessoa
     const stylePrompts = {
-      cyberpunk: `${prompt}, cyberpunk style, neon lights, futuristic, digital art, glowing colors, high tech aesthetic, synthwave, portrait`,
-      fantasy: `${prompt}, fantasy art style, magical, medieval, ethereal lighting, mystical atmosphere, fantasy portrait`,
-      artistic: `${prompt}, abstract art style, colorful, artistic interpretation, creative composition, painterly portrait`,
-      minimal: `${prompt}, minimalist style, clean lines, simple composition, modern aesthetic, minimal portrait`
+      cyberpunk: `same person, same face, cyberpunk style transformation, neon lights, futuristic aesthetic, glowing colors, high tech background, maintain facial features and identity`,
+      fantasy: `same person, same face, fantasy art transformation, magical elements, medieval aesthetic, ethereal lighting, mystical background, maintain facial features and identity`,
+      artistic: `same person, same face, artistic transformation, painterly style, colorful artistic interpretation, creative composition, maintain facial features and identity`,
+      minimal: `same person, same face, minimalist transformation, clean aesthetic, simple composition, modern style, maintain facial features and identity`
     }
 
-    const enhancedPrompt = stylePrompts[style?.toLowerCase() as keyof typeof stylePrompts] || prompt
+    const enhancedPrompt = stylePrompts[style?.toLowerCase() as keyof typeof stylePrompts] || `same person, same face, ${style} style transformation, maintain facial features and identity`
     console.log('Enhanced prompt:', enhancedPrompt)
 
     let image;
@@ -73,9 +73,9 @@ serve(async (req) => {
             inputs: imageBlob,
             parameters: {
               prompt: enhancedPrompt,
-              strength: 0.75, // Slightly higher for better style transfer
-              guidance_scale: 7.5,
-              num_inference_steps: 20
+              strength: 0.6, // Reduzir para manter mais da imagem original
+              guidance_scale: 8.0, // Aumentar para seguir melhor o prompt
+              num_inference_steps: 25 // Aumentar para melhor qualidade
             },
             model: 'stabilityai/stable-diffusion-xl-base-1.0'
           }),
@@ -85,29 +85,35 @@ serve(async (req) => {
         console.log('Image-to-image generation successful!')
         
       } catch (imageToImageError) {
-        console.log('Image-to-image failed, falling back to text-to-image:', imageToImageError.message)
+        console.log('Image-to-image failed, trying different approach:', imageToImageError.message)
         
-        // Fallback to text-to-image with more specific prompt about the person
-        const specificPrompt = `portrait of the same person from the reference image, ${enhancedPrompt}, maintaining facial features and identity`
-        
+        // Tentar com modelo diferente e parâmetros ajustados
         try {
           const fallbackTimeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Fallback request timeout after 25 seconds')), 25000)
           })
 
+          // Usar um prompt mais específico para manter a identidade
+          const identityPrompt = `transform this exact person with ${style} style, keep the same face, same person, same facial features, only change the artistic style and background`
+
           image = await Promise.race([
-            hf.textToImage({
-              inputs: specificPrompt,
-              model: 'black-forest-labs/FLUX.1-schnell',
-              use_cache: false
+            hf.imageToImage({
+              inputs: imageBlob,
+              parameters: {
+                prompt: identityPrompt,
+                strength: 0.5, // Ainda mais conservador
+                guidance_scale: 9.0,
+                num_inference_steps: 20
+              },
+              model: 'stabilityai/stable-diffusion-xl-base-1.0'
             }),
             fallbackTimeoutPromise
           ])
           
-          console.log('Fallback text-to-image generation successful!')
+          console.log('Fallback image-to-image generation successful!')
           
         } catch (fallbackError) {
-          console.error('Both image-to-image and fallback failed:', fallbackError.message)
+          console.error('Both image-to-image attempts failed:', fallbackError.message)
           throw new Error(`Generation failed: ${fallbackError.message}`)
         }
       }
