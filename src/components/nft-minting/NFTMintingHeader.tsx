@@ -8,7 +8,7 @@ interface NFTMintingHeaderProps {
 }
 
 export const NFTMintingHeader = ({ onBack }: NFTMintingHeaderProps) => {
-  const { disconnectWallet, account } = useWallet();
+  const { disconnectWallet, connectWallet, account } = useWallet();
 
   return (
     <header className="flex items-center justify-between p-6 backdrop-blur-sm bg-background/80 border-b">
@@ -28,7 +28,7 @@ export const NFTMintingHeader = ({ onBack }: NFTMintingHeaderProps) => {
         <span className="text-xl font-bold">NFT Creation</span>
       </div>
 
-      {account && (
+      {account ? (
         <Button 
           variant="outline" 
           size="sm"
@@ -37,6 +37,16 @@ export const NFTMintingHeader = ({ onBack }: NFTMintingHeaderProps) => {
         >
           <Wallet className="h-4 w-4" />
           Disconnect
+        </Button>
+      ) : (
+        <Button 
+          variant="default" 
+          size="sm"
+          onClick={connectWallet}
+          className="flex items-center gap-2"
+        >
+          <Wallet className="h-4 w-4" />
+          Connect Wallet
         </Button>
       )}
     </header>
