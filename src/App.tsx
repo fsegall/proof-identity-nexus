@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { WagmiProvider } from "./components/providers/WagmiProvider";
 import { ThemeProvider } from "./components/providers/ThemeProvider";
 import Landing from "./pages/Landing";
+import Auth from "./pages/Auth";
 import WalletConnect from "./pages/WalletConnect";
 import Onboarding from "./pages/Onboarding";
 import AgeVerification from "./pages/AgeVerification";
@@ -25,6 +26,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/auth" element={<Auth />} />
               <Route path="/connect" element={<WalletConnect />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/age-verification" element={<AgeVerification />} />

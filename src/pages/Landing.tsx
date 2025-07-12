@@ -1,152 +1,177 @@
-
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
-  Zap, 
   Shield, 
-  Cpu, 
   Wallet, 
-  ChevronRight, 
+  Lock, 
+  User, 
   Sparkles,
-  Lock,
-  Image,
-  Database,
   ArrowRight,
-  UserCheck
+  Play,
+  Zap,
+  Globe
 } from 'lucide-react';
 
 const Landing = () => {
   const navigate = useNavigate();
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
 
   const features = [
     {
-      icon: Cpu,
-      title: "AI Workflows",
-      description: "Advanced AI-powered identity verification and proof generation",
-      color: "from-blue-500 to-purple-600"
-    },
-    {
       icon: Shield,
       title: "Zero-Knowledge Proofs",
-      description: "Privacy-preserving verification without revealing sensitive data",
-      color: "from-green-500 to-teal-600"
+      description: "Prove your identity without revealing personal information using cutting-edge cryptographic techniques.",
+      color: "from-blue-500 to-cyan-500"
     },
     {
-      icon: Image,
-      title: "NFT Identity",
-      description: "Mint unique digital identity tokens (ERC721 & ERC1155)",
-      color: "from-purple-500 to-pink-600"
+      icon: Wallet,
+      title: "Web3 Integration",
+      description: "Seamlessly connect with your favorite wallets and interact with blockchain networks.",
+      color: "from-purple-500 to-pink-500"
     },
     {
-      icon: Database,
-      title: "Attestation Registry",
-      description: "Decentralized registry for verifiable credentials and proofs",
-      color: "from-orange-500 to-red-600"
+      icon: Lock,
+      title: "Privacy First",
+      description: "Your personal data remains private while still enabling verification and trust.",
+      color: "from-orange-500 to-red-500"
+    },
+    {
+      icon: User,
+      title: "Age Verification",
+      description: "Verify your age for age-restricted services without exposing your birth date.",
+      color: "from-green-500 to-emerald-500"
     }
   ];
 
-  const workflow = [
-    { step: 1, title: "Connect Wallet", description: "Link your Web3 wallet" },
-    { step: 2, title: "Complete Onboarding", description: "Set up your identity profile" },
-    { step: 3, title: "Generate Proofs", description: "Create ZK proofs with AI validation" },
-    { step: 4, title: "Register Attestation", description: "Store verifiable credentials" },
-    { step: 5, title: "Mint NFT", description: "Create your digital identity token" }
+  const steps = [
+    {
+      number: 1,
+      title: "Create Account",
+      description: "Sign up and create your secure identity profile"
+    },
+    {
+      number: 2,
+      title: "Connect Wallet",
+      description: "Link your Web3 wallet for blockchain interactions"
+    },
+    {
+      number: 3,
+      title: "Verify Identity",
+      description: "Complete ZK age verification privately and securely"
+    },
+    {
+      number: 4,
+      title: "Mint NFT",
+      description: "Get your unique identity NFT as proof of verification"
+    }
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
-      {/* Header */}
-      <header className="flex justify-between items-center p-6 backdrop-blur-sm bg-background/80 border-b">
+      {/* Navigation */}
+      <nav className="flex items-center justify-between p-6 backdrop-blur-sm bg-background/80 border-b">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-lg flex items-center justify-center">
-            <Lock className="h-5 w-5 text-white" />
+            <Shield className="h-5 w-5 text-white" />
           </div>
           <span className="text-xl font-bold">ZK Identity</span>
         </div>
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-            Docs
+          <Button variant="ghost" onClick={() => navigate('/auth')}>
+            Entrar
           </Button>
-          <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-            GitHub
+          <Button onClick={() => navigate('/auth')} className="btn-gradient">
+            Começar
           </Button>
-          <ThemeToggle />
         </div>
-      </header>
+      </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-        <div className="container mx-auto px-6 py-20 relative">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-8 animate-slide-up">
-              <Sparkles className="h-4 w-4" />
-              Next-Generation Identity Platform
+      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-6 py-20">
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Badge */}
+          <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full border border-primary/20 text-primary">
+            <Sparkles className="h-4 w-4 mr-2" />
+            <span className="text-sm font-medium">Powered by Zero-Knowledge Technology</span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent leading-tight">
+            Verify Your Identity
+            <br />
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Without Revealing It
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Experience the future of digital identity with zero-knowledge proofs. 
+            Prove you're over 18 without sharing personal information, mint unique NFTs, 
+            and maintain complete privacy.
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
+            <Button 
+              size="lg" 
+              className="btn-gradient text-lg px-8 py-6 h-auto group"
+              onClick={() => navigate('/auth')}
+            >
+              Começar Agora
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="text-lg px-8 py-6 h-auto border-2 group"
+            >
+              <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+              Ver Demo
+            </Button>
+          </div>
+
+          {/* Trust Indicators */}
+          <div className="flex items-center justify-center gap-8 pt-12 opacity-60">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              <span className="text-sm">100% Private</span>
             </div>
-            
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent animate-slide-up">
-              Next-Gen Identity & Proof Starter
-            </h1>
-            
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-slide-up">
-              Combine the power of AI, Zero-Knowledge Proofs, and Web3 to create secure, 
-              privacy-preserving digital identities with verifiable credentials.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-up">
-              <Button 
-                onClick={() => navigate('/onboarding')}
-                className="btn-gradient text-lg px-8 py-4 h-auto group"
-              >
-                <UserCheck className="h-5 w-5 mr-2" />
-                Start Age Verification
-                <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              
-              <Button 
-                onClick={() => navigate('/connect')}
-                variant="outline" 
-                className="text-lg px-8 py-4 h-auto border-2"
-              >
-                <Wallet className="h-5 w-5 mr-2" />
-                Connect Wallet
-              </Button>
+            <div className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              <span className="text-sm">Instant Verification</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              <span className="text-sm">Web3 Ready</span>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Features Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-6">
+      <section className="py-20 px-6">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Powerful Features
+              Why Choose ZK Identity?
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Everything you need to build secure, verifiable digital identities
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Revolutionary technology that puts privacy and security at the forefront
+              of digital identity verification.
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <Card 
-                key={index}
-                className={`group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl ${
-                  hoveredCard === index ? 'shadow-lg' : ''
-                }`}
-                onMouseEnter={() => setHoveredCard(index)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                <CardContent className="p-6">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+              <Card key={index} className="border-2 hover:border-primary/20 transition-all duration-200 group">
+                <CardHeader>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <feature.icon className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <p className="text-muted-foreground">{feature.description}</p>
                 </CardContent>
               </Card>
@@ -155,104 +180,69 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Workflow Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-6">
+      {/* How It Works */}
+      <section className="py-20 px-6 bg-muted/30">
+        <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Simple Workflow
+              How It Works
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Get started with our streamlined process in just 5 steps
+            <p className="text-lg text-muted-foreground">
+              Get verified in just four simple steps
             </p>
           </div>
-          
-          <div className="max-w-4xl mx-auto">
-            <div className="grid gap-6 md:gap-8">
-              {workflow.map((item, index) => (
-                <div key={index} className="flex items-center gap-6 group">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center text-white font-bold text-lg group-hover:scale-110 transition-transform">
-                    {item.step}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold mb-1">{item.title}</h3>
-                    <p className="text-muted-foreground">{item.description}</p>
-                  </div>
-                  {index < workflow.length - 1 && (
-                    <ChevronRight className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                  )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {steps.map((step, index) => (
+              <div key={index} className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-xl">
+                  {step.number}
                 </div>
-              ))}
-            </div>
+                <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
+                <p className="text-muted-foreground text-sm">{step.description}</p>
+                {index < steps.length - 1 && (
+                  <div className="hidden lg:block absolute top-8 left-full w-full">
+                    <ArrowRight className="h-5 w-5 text-muted-foreground mx-auto" />
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary to-accent">
-        <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+      <section className="py-20 px-6">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Ready to Get Started?
           </h2>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Join the future of digital identity with our comprehensive Web3 + AI + ZK starter kit
+          <p className="text-lg text-muted-foreground mb-8">
+            Join thousands of users who trust ZK Identity for secure, private verification.
           </p>
           <Button 
-            onClick={() => navigate('/onboarding')}
-            className="bg-white text-primary hover:bg-white/95 text-lg px-8 py-4 h-auto font-semibold"
+            size="lg" 
+            className="btn-gradient text-lg px-8 py-6 h-auto"
+            onClick={() => navigate('/auth')}
           >
-            Start Building Now
+            Create Your Identity
+            <Sparkles className="ml-2 h-5 w-5" />
           </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-background border-t py-12">
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-lg flex items-center justify-center">
-                  <Lock className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xl font-bold">ZK Identity</span>
-              </div>
-              <p className="text-muted-foreground">
-                The future of digital identity and proof systems.
-              </p>
+      <footer className="border-t p-6">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between">
+          <div className="flex items-center space-x-2 mb-4 md:mb-0">
+            <div className="w-6 h-6 bg-gradient-to-r from-primary to-accent rounded flex items-center justify-center">
+              <Shield className="h-4 w-4 text-white" />
             </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Documentation</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Resources</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Tutorials</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">GitHub</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Privacy</a></li>
-              </ul>
-            </div>
+            <span className="font-semibold">ZK Identity</span>
           </div>
-          
-          <div className="border-t mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 ZK Identity. All rights reserved.</p>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            © 2024 ZK Identity. Privacy-first identity verification.
+          </p>
         </div>
       </footer>
     </div>
