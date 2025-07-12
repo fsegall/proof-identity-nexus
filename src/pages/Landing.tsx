@@ -1,3 +1,4 @@
+
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +26,14 @@ const Landing = () => {
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate('/connect');
+    } else {
+      navigate('/auth');
+    }
   };
 
   const features = [
@@ -112,7 +121,7 @@ const Landing = () => {
               <Button variant="ghost" onClick={() => navigate('/auth')}>
                 {t('nav.login')}
               </Button>
-              <Button onClick={() => navigate('/auth')} className="btn-gradient">
+              <Button onClick={handleGetStarted} className="btn-gradient">
                 {t('nav.getStarted')}
               </Button>
             </>
@@ -148,7 +157,7 @@ const Landing = () => {
             <Button 
               size="lg" 
               className="btn-gradient text-lg px-8 py-6 h-auto group"
-              onClick={() => navigate('/auth')}
+              onClick={handleGetStarted}
             >
               {t('hero.startNow')}
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -254,7 +263,7 @@ const Landing = () => {
           <Button 
             size="lg" 
             className="btn-gradient text-lg px-8 py-6 h-auto"
-            onClick={() => navigate('/auth')}
+            onClick={handleGetStarted}
           >
             {t('cta.button')}
             <Sparkles className="ml-2 h-5 w-5" />
