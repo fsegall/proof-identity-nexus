@@ -1,6 +1,4 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,36 +38,6 @@ serve(async (req) => {
 
     console.log('Token available:', hfToken ? 'Yes' : 'No')
     console.log('Token length:', hfToken?.length || 0)
-    console.log('Initializing Hugging Face client...')
-    const hf = new HfInference(hfToken)
-
-    // Process the base64 image data
-    console.log('Processing image data...')
-    let base64Data
-    try {
-      base64Data = imageData.includes(',') ? imageData.split(',')[1] : imageData
-      console.log('Base64 data length:', base64Data.length)
-    } catch (error) {
-      console.error('Error processing base64 data:', error)
-      return new Response(
-        JSON.stringify({ error: 'Invalid image data format' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
-    }
-
-    // Convert to blob
-    let imageBlob
-    try {
-      const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
-      imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' })
-      console.log('Image blob created, size:', imageBuffer.length, 'bytes')
-    } catch (error) {
-      console.error('Error creating image blob:', error)
-      return new Response(
-        JSON.stringify({ error: 'Failed to process image data' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
-    }
 
     // Enhanced prompts for better style preservation
     const stylePrompts = {
@@ -85,10 +53,10 @@ serve(async (req) => {
     console.log('Final prompt:', enhancedPrompt)
 
     try {
-      console.log('Starting image-to-image generation...')
+      console.log('Starting text-to-image generation...')
       
       const response = await fetch(
-        'https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5',
+        'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell',
         {
           headers: {
             Authorization: `Bearer ${hfToken}`,
@@ -98,16 +66,20 @@ serve(async (req) => {
           body: JSON.stringify({
             inputs: enhancedPrompt,
             parameters: {
-              negative_prompt: "different person, different face, blurry, distorted, multiple people, deformed, bad anatomy, low quality",
-              num_inference_steps: 25,
-              guidance_scale: 7.0,
+              num_inference_steps: 4,
+              guidance_scale: 0.0,
             }
           }),
         }
       )
+      
+      console.log('Response status:', response.status)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text()
+        console.error('API Error:', errorText)
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`)
       }
 
       const imageBuffer = await response.arrayBuffer()
