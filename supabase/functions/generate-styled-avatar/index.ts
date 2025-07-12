@@ -14,126 +14,173 @@ serve(async (req) => {
   try {
     const { prompt, style, imageData } = await req.json()
 
-    console.log('=== AVATAR STYLING REQUEST ===')
+    console.log('=== READY PLAYER ME AVATAR CREATION ===')
     console.log('Style:', style)
     console.log('Has imageData:', !!imageData)
     console.log('Prompt:', prompt)
 
-    if (!prompt || !imageData) {
-      console.error('Missing required fields:', { hasPrompt: !!prompt, hasImageData: !!imageData })
+    if (!style) {
+      console.error('Missing required style parameter')
       return new Response(
-        JSON.stringify({ error: 'Both prompt and imageData are required for styling' }),
+        JSON.stringify({ error: 'Style parameter is required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    const hfToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN')
-    if (!hfToken) {
-      console.error('HUGGING_FACE_ACCESS_TOKEN not found in environment')
-      return new Response(
-        JSON.stringify({ error: 'Hugging Face API token not configured' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      )
-    }
-
-    console.log('Token available:', hfToken ? 'Yes' : 'No')
-    console.log('Token length:', hfToken?.length || 0)
-
-    // Enhanced prompts for better style preservation
-    const stylePrompts = {
-      cyberpunk: `Transform this portrait into cyberpunk style: neon lighting, futuristic aesthetic, cyberpunk elements, but preserve the exact same person's face and features`,
-      fantasy: `Transform this portrait into fantasy style: magical medieval aesthetic, fantasy elements, but keep the exact same person's face and identity`,
-      artistic: `Transform this portrait into artistic painterly style: colorful art interpretation, but maintain the exact same person's face and features`,
-      minimal: `Transform this portrait into minimal clean style: simple aesthetic, clean background, but preserve the exact same person's face and identity`
-    }
-
-    const enhancedPrompt = stylePrompts[style?.toLowerCase() as keyof typeof stylePrompts] || 
-      `Transform this portrait into ${style} style while preserving the exact same person's face and identity`
-    
-    console.log('Final prompt:', enhancedPrompt)
-
     try {
-      console.log('Starting text-to-image generation...')
+      console.log('Creating anonymous Ready Player Me user...')
       
-      const response = await fetch(
-        'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell',
-        {
-          headers: {
-            Authorization: `Bearer ${hfToken}`,
-            'Content-Type': 'application/json',
-          },
-          method: 'POST',
-          body: JSON.stringify({
-            inputs: enhancedPrompt,
-            parameters: {
-              num_inference_steps: 4,
-              guidance_scale: 0.0,
-            }
-          }),
-        }
-      )
-      
-      console.log('Response status:', response.status)
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+      // Step 1: Create anonymous user
+      const userResponse = await fetch('https://api.readyplayer.me/v1/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: {
+            type: 'users'
+          }
+        })
+      })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('API Error:', errorText)
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`)
+      if (!userResponse.ok) {
+        const errorText = await userResponse.text()
+        console.error('Failed to create user:', errorText)
+        throw new Error(`Failed to create Ready Player Me user: ${userResponse.status}`)
       }
 
-      const imageBuffer = await response.arrayBuffer()
-      
-      console.log('Image generation completed successfully!')
+      const userData = await userResponse.json()
+      const userId = userData.data.id
+      console.log('Created user:', userId)
 
+      // Step 2: Create avatar for the user with style-based configuration
+      console.log('Creating avatar with style configuration...')
+      
+      // Map our styles to Ready Player Me avatar configurations
+      const avatarConfigs = {
+        cyberpunk: {
+          bodyType: 'fullbody',
+          assets: {
+            hair: 'hair_male_06',
+            outfit: 'outfit_male_casualsuit_02',
+            skin: 'skin_male_04'
+          }
+        },
+        fantasy: {
+          bodyType: 'fullbody', 
+          assets: {
+            hair: 'hair_male_07',
+            outfit: 'outfit_male_fantasy_01',
+            skin: 'skin_male_02'
+          }
+        },
+        artistic: {
+          bodyType: 'fullbody',
+          assets: {
+            hair: 'hair_male_05',
+            outfit: 'outfit_male_artistic_01', 
+            skin: 'skin_male_01'
+          }
+        },
+        minimal: {
+          bodyType: 'fullbody',
+          assets: {
+            hair: 'hair_male_01',
+            outfit: 'outfit_male_basic_01',
+            skin: 'skin_male_01'
+          }
+        }
+      }
+
+      const config = avatarConfigs[style?.toLowerCase() as keyof typeof avatarConfigs] || avatarConfigs.minimal
+
+      const avatarResponse = await fetch(`https://api.readyplayer.me/v1/users/${userId}/avatars`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: {
+            type: 'avatars',
+            attributes: config
+          }
+        })
+      })
+
+      if (!avatarResponse.ok) {
+        const errorText = await avatarResponse.text()
+        console.error('Failed to create avatar:', errorText)
+        throw new Error(`Failed to create Ready Player Me avatar: ${avatarResponse.status}`)
+      }
+
+      const avatarData = await avatarResponse.json()
+      const avatarId = avatarData.data.id
+      console.log('Created avatar:', avatarId)
+
+      // Step 3: Get avatar image
+      const avatarImageUrl = `https://models.readyplayer.me/${avatarId}.png?scene=fullbody-portrait-v1-transparent`
+      
+      console.log('Fetching avatar image from:', avatarImageUrl)
+      
+      // Wait a bit for the avatar to be processed
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      const imageResponse = await fetch(avatarImageUrl)
+      
+      if (!imageResponse.ok) {
+        console.error('Failed to fetch avatar image, status:', imageResponse.status)
+        throw new Error(`Failed to fetch avatar image: ${imageResponse.status}`)
+      }
+
+      const imageBuffer = await imageResponse.arrayBuffer()
+      
       if (!imageBuffer || imageBuffer.byteLength === 0) {
-        console.error('No image returned from Hugging Face API')
-        return new Response(
-          JSON.stringify({ error: 'No image generated by AI service' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-        )
+        console.error('No image data received')
+        throw new Error('No image data received from Ready Player Me')
       }
 
       console.log('Converting result to base64...')
       const base64Result = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
 
       console.log('=== SUCCESS ===')
-      console.log('Generated image size:', imageBuffer.byteLength, 'bytes')
+      console.log('Generated avatar image size:', imageBuffer.byteLength, 'bytes')
+      console.log('Avatar ID:', avatarId)
       
       return new Response(
-        JSON.stringify({ image: `data:image/png;base64,${base64Result}` }),
+        JSON.stringify({ 
+          image: `data:image/png;base64,${base64Result}`,
+          avatarId: avatarId,
+          avatarUrl: avatarImageUrl
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
       
-    } catch (imageError) {
-      console.error('=== IMAGE GENERATION ERROR ===')
-      console.error('Error name:', imageError.name)
-      console.error('Error message:', imageError.message)
-      console.error('Full error:', imageError)
+    } catch (avatarError) {
+      console.error('=== AVATAR CREATION ERROR ===')
+      console.error('Error name:', avatarError.name)
+      console.error('Error message:', avatarError.message)
+      console.error('Full error:', avatarError)
 
-      // Provide specific error messages based on the error type
-      let errorMessage = 'Image generation failed'
+      // Provide specific error messages
+      let errorMessage = 'Avatar creation failed'
       let statusCode = 500
 
-      if (imageError.message?.includes('401') || imageError.message?.includes('unauthorized')) {
-        errorMessage = 'Invalid or expired Hugging Face API token. Please check your token permissions.'
+      if (avatarError.message?.includes('401') || avatarError.message?.includes('unauthorized')) {
+        errorMessage = 'Unauthorized access to Ready Player Me API'
         statusCode = 401
-      } else if (imageError.message?.includes('429') || imageError.message?.includes('rate limit')) {
+      } else if (avatarError.message?.includes('429') || avatarError.message?.includes('rate limit')) {
         errorMessage = 'API rate limit exceeded. Please wait and try again.'
         statusCode = 429
-      } else if (imageError.message?.includes('503') || imageError.message?.includes('service unavailable')) {
-        errorMessage = 'AI service temporarily unavailable. Please try again in a few moments.'
+      } else if (avatarError.message?.includes('503') || avatarError.message?.includes('service unavailable')) {
+        errorMessage = 'Ready Player Me service temporarily unavailable. Please try again.'
         statusCode = 503
-      } else if (imageError.message?.includes('timeout')) {
-        errorMessage = 'Generation timeout. Please try again with a simpler style.'
-        statusCode = 408
       }
 
       return new Response(
         JSON.stringify({ 
           error: errorMessage,
-          details: imageError.message,
-          code: imageError.name
+          details: avatarError.message,
+          code: avatarError.name
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: statusCode }
       )
