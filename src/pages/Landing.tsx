@@ -1,9 +1,9 @@
-
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Shield, 
   Wallet, 
@@ -14,12 +14,18 @@ import {
   Play,
   Zap,
   Globe,
-  Plus
+  Plus,
+  LogOut
 } from 'lucide-react';
 
 const Landing = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   const features = [
     {
@@ -92,12 +98,25 @@ const Landing = () => {
             <Plus className="h-4 w-4" />
             Create Attestation
           </Button>
-          <Button variant="ghost" onClick={() => navigate('/auth')}>
-            {t('nav.login')}
-          </Button>
-          <Button onClick={() => navigate('/auth')} className="btn-gradient">
-            {t('nav.getStarted')}
-          </Button>
+          {user ? (
+            <Button 
+              variant="ghost" 
+              onClick={handleSignOut}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={() => navigate('/auth')}>
+                {t('nav.login')}
+              </Button>
+              <Button onClick={() => navigate('/auth')} className="btn-gradient">
+                {t('nav.getStarted')}
+              </Button>
+            </>
+          )}
         </div>
       </nav>
 
