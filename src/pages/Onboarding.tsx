@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
@@ -15,30 +16,25 @@ import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { 
   User, 
-  Upload, 
   ArrowLeft, 
   ArrowRight, 
-  Sparkles,
   Check,
   Calendar as CalendarLucide
 } from 'lucide-react';
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
     birthDate: undefined as Date | undefined,
-    avatar: null as File | null,
-    avatarPreview: null as string | null
   });
 
   const { user, loading } = useAuth();
   const { submitProfile, isSubmitting, calculateAge } = useOnboarding(user?.id || null);
 
-  const totalSteps = 4;
+  const totalSteps = 3;
   const progress = (currentStep / totalSteps) * 100;
 
   // Redirect to login if not authenticated
@@ -63,28 +59,6 @@ const Onboarding = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, avatar: file }));
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFormData(prev => ({ ...prev, avatarPreview: e.target?.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const generateAIAvatar = async () => {
-    // Simular geração de avatar AI
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Usar avatar placeholder
-    const placeholderAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face';
-    setFormData(prev => ({ ...prev, avatarPreview: placeholderAvatar }));
-  };
-
   const canProceed = () => {
     switch (currentStep) {
       case 1:
@@ -92,8 +66,6 @@ const Onboarding = () => {
       case 2:
         return formData.birthDate !== undefined;
       case 3:
-        return true; // Avatar é opcional
-      case 4:
         return true; // Review step
       default:
         return false;
@@ -115,7 +87,7 @@ const Onboarding = () => {
       username: formData.username,
       fullName: formData.fullName,
       birthDate: formData.birthDate.toISOString(),
-      avatarUrl: formData.avatarPreview,
+      avatarUrl: null, // No avatar at this stage
     });
   };
 
@@ -163,14 +135,12 @@ const Onboarding = () => {
               <CardTitle className="text-2xl">
                 {currentStep === 1 && "Personal Information"}
                 {currentStep === 2 && "Date of Birth"}
-                {currentStep === 3 && "Profile Avatar"}
-                {currentStep === 4 && "Review & Confirm"}
+                {currentStep === 3 && "Review & Confirm"}
               </CardTitle>
               <CardDescription>
                 {currentStep === 1 && "Tell us a bit about yourself"}
                 {currentStep === 2 && "Please provide your date of birth for ZK age verification"}
-                {currentStep === 3 && "Choose or generate your profile picture (optional)"}
-                {currentStep === 4 && "Review your information before proceeding to ZK verification"}
+                {currentStep === 3 && "Review your information before proceeding to document verification"}
               </CardDescription>
             </CardHeader>
             
@@ -268,84 +238,13 @@ const Onboarding = () => {
                 </div>
               )}
 
-              {/* Step 3: Avatar Upload */}
+              {/* Step 3: Review */}
               {currentStep === 3 && (
-                <div className="space-y-6 animate-slide-up">
-                  <div className="flex flex-col items-center">
-                    <div className="relative">
-                      <div className="w-32 h-32 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center overflow-hidden">
-                        {formData.avatarPreview ? (
-                          <img 
-                            src={formData.avatarPreview} 
-                            alt="Avatar preview" 
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="h-16 w-16 text-white" />
-                        )}
-                      </div>
-                      {formData.avatarPreview && (
-                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                          <Check className="h-5 w-5 text-white" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button
-                      variant="outline"
-                      className="h-auto p-4 flex flex-col items-center gap-2"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="h-6 w-6" />
-                      <span>Upload Photo</span>
-                      <span className="text-sm text-muted-foreground">JPG, PNG up to 10MB</span>
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      className="h-auto p-4 flex flex-col items-center gap-2"
-                      onClick={generateAIAvatar}
-                    >
-                      <Sparkles className="h-6 w-6" />
-                      <span>AI Generate</span>
-                      <span className="text-sm text-muted-foreground">Create with AI</span>
-                    </Button>
-                  </div>
-                  
-                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      💡 <strong>Tip:</strong> This avatar is optional and will be used for your NFT identity. 
-                      You can upload a photo or generate an AI avatar later in the process.
-                    </p>
-                  </div>
-                  
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
-                </div>
-              )}
-
-              {/* Step 4: Review */}
-              {currentStep === 4 && (
                 <div className="space-y-6 animate-slide-up">
                   <div className="bg-muted/50 rounded-lg p-6 space-y-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center overflow-hidden">
-                        {formData.avatarPreview ? (
-                          <img 
-                            src={formData.avatarPreview} 
-                            alt="Avatar" 
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="h-8 w-8 text-white" />
-                        )}
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
+                        <User className="h-8 w-8 text-white" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-lg">{formData.fullName}</h3>
@@ -376,10 +275,6 @@ const Onboarding = () => {
                         {formData.birthDate ? format(formData.birthDate, "PPP") : 'Not set'}
                       </span>
                     </div>
-                    <div className="flex justify-between py-2 border-b">
-                      <span className="text-muted-foreground">Avatar</span>
-                      <span className="font-medium">{formData.avatarPreview ? 'Set' : 'Will be generated later'}</span>
-                    </div>
                   </div>
                   
                   <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -387,8 +282,8 @@ const Onboarding = () => {
                       🔄 Next Steps
                     </h4>
                     <p className="text-sm text-blue-700 dark:text-blue-300">
-                      After confirming your profile, your age will be verified using zero-knowledge 
-                      proofs. This process ensures privacy while proving you meet the minimum age requirement.
+                      After confirming your profile, you'll need to upload a document photo for age verification. 
+                      The document must be issued within the last 4 years.
                     </p>
                   </div>
                 </div>
@@ -413,7 +308,7 @@ const Onboarding = () => {
                     <LoadingSpinner size="sm" className="mr-2" />
                   ) : (
                     <>
-                      {currentStep === totalSteps ? 'Start ZK Verification' : 'Next'}
+                      {currentStep === totalSteps ? 'Continue to Document Verification' : 'Next'}
                       {currentStep < totalSteps && <ArrowRight className="h-4 w-4 ml-2" />}
                     </>
                   )}

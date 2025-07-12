@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useWallet } from '@/hooks/useWallet';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   User, 
   Shield, 
@@ -22,49 +24,73 @@ import {
   Wallet,
   Activity,
   TrendingUp,
-  Star
+  Star,
+  Home
 } from 'lucide-react';
+
+interface UserProfile {
+  full_name: string;
+  username: string;
+  avatar_url: string | null;
+  created_at: string;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { account, disconnectWallet } = useWallet();
+  const { user } = useAuth();
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock user data
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('full_name, username, avatar_url, created_at')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user profile:', error);
+          return;
+        }
+
+        setUserProfile(data);
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user?.id]);
+
+  // Mock data for demo - in a real app, this would come from the database
   const userData = {
-    name: "Alex Johnson",
-    username: "alexj",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-    joinedDate: new Date('2024-01-15'),
-    totalNFTs: 3,
-    totalAttestations: 5,
-    verificationLevel: "Gold"
+    name: userProfile?.full_name || "Alex Johnson",
+    username: userProfile?.username || "alexj",
+    avatar: userProfile?.avatar_url || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+    joinedDate: new Date(userProfile?.created_at || '2024-01-15'),
+    totalNFTs: 1,
+    totalAttestations: 1,
+    verificationLevel: "Verified"
   };
 
   const nftCollection = [
     {
       id: 1,
-      name: "ZK Identity #7834",
+      name: "ZK Identity NFT",
       type: "ERC721",
-      image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&h=300&fit=crop",
-      mintDate: new Date('2024-01-15'),
-      verified: true
-    },
-    {
-      id: 2,
-      name: "Age Verification Badge",
-      type: "ERC1155",
-      image: "https://images.unsplash.com/photo-1634926878768-2a5b3c42f139?w=300&h=300&fit=crop",
-      mintDate: new Date('2024-01-20'),
-      verified: true
-    },
-    {
-      id: 3,
-      name: "Professional Credential",
-      type: "ERC721",
-      image: "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?w=300&h=300&fit=crop",
-      mintDate: new Date('2024-01-25'),
-      verified: true
+      image: userData.avatar,
+      mintDate: new Date(),
+      verified: true,
+      description: "Your unique ZK Identity NFT with verified age proof"
     }
   ];
 
@@ -73,25 +99,9 @@ const Dashboard = () => {
       id: 1,
       type: "Age Verification",
       hash: "0x742d35Cc6634C0532925a3b8D8c89Adf1F84",
-      date: new Date('2024-01-15'),
+      date: new Date(),
       status: "verified",
       blockNumber: 18500000
-    },
-    {
-      id: 2,
-      type: "Identity Proof",
-      hash: "0x8f4c7e2b1a9d3f5e6c8b7a2d4e3f1c9b8a7d",
-      date: new Date('2024-01-20'),
-      status: "verified",
-      blockNumber: 18501234
-    },
-    {
-      id: 3,
-      type: "Credential Verification",
-      hash: "0x3e9f1c8b7a2d4e5f6c9b8a7d3e2f1c8b7a9d",
-      date: new Date('2024-01-25'),
-      status: "verified",
-      blockNumber: 18502456
     }
   ];
 
@@ -105,6 +115,17 @@ const Dashboard = () => {
     disconnectWallet();
     navigate('/');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
@@ -123,6 +144,15 @@ const Dashboard = () => {
             </div>
             
             <div className="flex items-center space-x-4">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2"
+              >
+                <Home className="h-5 w-5" />
+                Home
+              </Button>
               <ThemeToggle />
               <Button variant="ghost" size="sm">
                 <Settings className="h-5 w-5" />
@@ -146,7 +176,7 @@ const Dashboard = () => {
                     <img 
                       src={userData.avatar} 
                       alt="Profile" 
-                      className="w-20 h-20 rounded-full mx-auto border-4 border-primary/20"
+                      className="w-20 h-20 rounded-full mx-auto border-4 border-primary/20 object-cover"
                     />
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
                       <Shield className="h-3 w-3 text-white" />
@@ -155,29 +185,33 @@ const Dashboard = () => {
                   
                   <div>
                     <h2 className="text-xl font-bold">{userData.name}</h2>
-                    <p className="text-muted-foreground">@{userData.username}</p>
+                    {userData.username && (
+                      <p className="text-muted-foreground">@{userData.username}</p>
+                    )}
                   </div>
                   
                   <StatusBadge status="success">
-                    {userData.verificationLevel} Verified
+                    {userData.verificationLevel}
                   </StatusBadge>
                   
-                  <div className="bg-muted/50 rounded-lg p-3 text-left">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Wallet</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(account || '')}
-                        className="h-6 px-2"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
+                  {account && (
+                    <div className="bg-muted/50 rounded-lg p-3 text-left">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Wallet</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(account)}
+                          className="h-6 px-2"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="font-mono text-xs mt-1 break-all">
+                        {account}
+                      </p>
                     </div>
-                    <p className="font-mono text-xs mt-1 break-all">
-                      {account}
-                    </p>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -220,11 +254,10 @@ const Dashboard = () => {
           {/* Main Content */}
           <div className="lg:col-span-3">
             <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="nfts">NFTs</TabsTrigger>
                 <TabsTrigger value="attestations">Attestations</TabsTrigger>
-                <TabsTrigger value="activity">Activity</TabsTrigger>
               </TabsList>
 
               {/* Overview Tab */}
@@ -240,55 +273,57 @@ const Dashboard = () => {
                         </p>
                       </div>
                       <div className="text-right">
-                        <div className="text-3xl font-bold text-primary">{userData.verificationLevel}</div>
-                        <div className="text-sm text-muted-foreground">Verification Level</div>
+                        <div className="text-3xl font-bold text-primary">✅</div>
+                        <div className="text-sm text-muted-foreground">Fully Verified</div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Recent Activity */}
+                {/* Identity NFT Showcase */}
                 <Card className="shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      Recent Activity
+                      <Trophy className="h-5 w-5" />
+                      Your ZK Identity NFT
                     </CardTitle>
+                    <CardDescription>
+                      Your unique digital identity with verified age proof
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                          <Image className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">NFT Minted Successfully</p>
-                          <p className="text-sm text-muted-foreground">Professional Credential #3421</p>
-                        </div>
-                        <span className="text-sm text-muted-foreground">2 days ago</span>
+                    <div className="flex items-center gap-6 p-4 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg">
+                      <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-primary/20">
+                        <img 
+                          src={userData.avatar} 
+                          alt="ZK Identity NFT"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      
-                      <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                          <Database className="h-5 w-5 text-white" />
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold mb-2">ZK Identity #{Math.floor(Math.random() * 10000)}</h3>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Verified identity NFT for {userData.name}
+                        </p>
+                        <div className="flex items-center gap-4 text-xs">
+                          <span className="flex items-center gap-1">
+                            <Shield className="h-3 w-3 text-green-500" />
+                            Age Verified
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Database className="h-3 w-3 text-blue-500" />
+                            ZK Proof
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Star className="h-3 w-3 text-yellow-500" />
+                            ERC-721
+                          </span>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium">Attestation Registered</p>
-                          <p className="text-sm text-muted-foreground">Identity Proof verification</p>
-                        </div>
-                        <span className="text-sm text-muted-foreground">5 days ago</span>
                       </div>
-                      
-                      <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                        <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                          <Shield className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">Profile Verified</p>
-                          <p className="text-sm text-muted-foreground">ZK proof validation completed</p>
-                        </div>
-                        <span className="text-sm text-muted-foreground">1 week ago</span>
-                      </div>
+                      <Button variant="outline" size="sm">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        View
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -327,13 +362,14 @@ const Dashboard = () => {
                                   </StatusBadge>
                                 )}
                               </div>
+                              <p className="text-xs text-muted-foreground">{nft.description}</p>
                               <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>{nft.type}</span>
                                 <span>{nft.mintDate.toLocaleDateString()}</span>
                               </div>
                               <Button variant="outline" size="sm" className="w-full">
                                 <ExternalLink className="h-3 w-3 mr-1" />
-                                View on OpenSea
+                                View Details
                               </Button>
                             </div>
                           </CardContent>
@@ -390,69 +426,6 @@ const Dashboard = () => {
                           </div>
                         </div>
                       ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Activity Tab */}
-              <TabsContent value="activity" className="space-y-6">
-                <Card className="shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Activity Timeline
-                    </CardTitle>
-                    <CardDescription>
-                      Complete history of your ZK Identity interactions
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      <div className="relative">
-                        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border"></div>
-                        
-                        <div className="space-y-6">
-                          <div className="flex gap-4">
-                            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center relative z-10">
-                              <Image className="h-4 w-4 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <h3 className="font-semibold">NFT Minted</h3>
-                                <span className="text-sm text-muted-foreground">Jan 25, 2024</span>
-                              </div>
-                              <p className="text-sm text-muted-foreground">Professional Credential #3421</p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-4">
-                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center relative z-10">
-                              <Database className="h-4 w-4 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <h3 className="font-semibold">Attestation Registered</h3>
-                                <span className="text-sm text-muted-foreground">Jan 20, 2024</span>
-                              </div>
-                              <p className="text-sm text-muted-foreground">Identity Proof verification</p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-4">
-                            <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center relative z-10">
-                              <Shield className="h-4 w-4 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <h3 className="font-semibold">Profile Created</h3>
-                                <span className="text-sm text-muted-foreground">Jan 15, 2024</span>
-                              </div>
-                              <p className="text-sm text-muted-foreground">ZK Identity profile initialized</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>

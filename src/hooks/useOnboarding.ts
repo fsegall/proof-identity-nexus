@@ -146,7 +146,7 @@ export function useOnboarding(userId: string | null) {
           .update({
             birth_date: birthDate,
             estimated_age: age,
-            status: 'processing',
+            status: 'pending',
             avatar_url: avatarUrl?.trim() || null,
             updated_at: new Date().toISOString(),
           })
@@ -169,7 +169,7 @@ export function useOnboarding(userId: string | null) {
             user_id: userId,
             birth_date: birthDate,
             estimated_age: age,
-            status: 'processing',
+            status: 'pending',
             avatar_url: avatarUrl?.trim() || null,
           });
 
@@ -184,61 +184,20 @@ export function useOnboarding(userId: string | null) {
         }
       }
 
-      console.log('Starting ZK age verification...');
-
-      // Usar a nova API ZK para verificar idade
-      const birthDateTimestamp = dateToUnixTimestamp(birthDate);
-      const verificationResult = await zkApiClient.verifyAge(birthDateTimestamp, 18);
-
-      console.log('ZK verification result:', verificationResult);
-
-      // Determinar status baseado na verificação
-      const finalStatus = verificationResult.valid && verificationResult.isOldEnough ? 'verified' : 'rejected';
+      toast({
+        title: 'Profile Created Successfully!',
+        description: 'Please proceed to document verification.',
+      });
       
-      // Atualizar status no banco de dados
-      const { error: updateError } = await supabase
-        .from('age_verification')
-        .update({
-          status: finalStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId);
-
-      if (updateError) {
-        console.error('Error updating verification status:', updateError);
-      }
-
-      if (finalStatus === 'verified') {
-        toast({
-          title: 'Profile Created Successfully!',
-          description: '✅ Your age has been verified using zero-knowledge proofs.',
-        });
-        navigate('/age-verification');
-      } else {
-        toast({
-          title: 'Age Verification Failed',
-          description: 'Unable to verify your age. Please check your information and try again.',
-          variant: 'destructive',
-        });
-      }
+      // Navegar para verificação de documento (não mais para ZK verification)
+      navigate('/age-verification');
       
     } catch (err: any) {
       console.error('Profile submission error:', err);
       
-      // Atualizar status como falhou no caso de erro
-      if (userId) {
-        await supabase
-          .from('age_verification')
-          .update({
-            status: 'rejected',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', userId);
-      }
-      
       toast({
         title: 'Error',
-        description: err?.message || 'An error occurred during age verification',
+        description: err?.message || 'An error occurred during profile creation',
         variant: 'destructive',
       });
     } finally {
