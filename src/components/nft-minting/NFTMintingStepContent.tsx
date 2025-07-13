@@ -14,6 +14,8 @@ interface StepContentProps {
   isPending: boolean;
   isConfirming: boolean;
   isSuccess: boolean;
+  isMintingDemo?: boolean;
+  demoMintSuccess?: boolean;
   generateFace: (prompt: string) => void;
   generateStyledAvatar: (style: string) => void;
   handleMintNFT: () => void;
@@ -33,6 +35,8 @@ export const NFTMintingStepContent = ({
   isPending,
   isConfirming,
   isSuccess,
+  isMintingDemo,
+  demoMintSuccess,
   generateFace,
   generateStyledAvatar,
   handleMintNFT,
@@ -92,14 +96,16 @@ export const NFTMintingStepContent = ({
           )}
 
           {currentStep === 3 && styledAvatar && (
-            <NFTMintingStep
-              styledAvatar={styledAvatar}
-              isPending={isPending}
-              isConfirming={isConfirming}
-              isSuccess={isSuccess}
-              handleMintNFT={handleMintNFT}
-              onBack={() => setCurrentStep(2)}
-            />
+          <NFTMintingStep
+            styledAvatar={styledAvatar}
+            isPending={isPending}
+            isConfirming={isConfirming}
+            isSuccess={isSuccess}
+            isMintingDemo={isMintingDemo}
+            demoMintSuccess={demoMintSuccess}
+            handleMintNFT={handleMintNFT}
+            onBack={() => setCurrentStep(2)}
+          />
           )}
 
           {currentStep === 3 && !styledAvatar && (

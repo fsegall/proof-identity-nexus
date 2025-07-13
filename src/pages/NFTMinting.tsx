@@ -21,6 +21,8 @@ const NFTMinting = () => {
     isPending,
     isConfirming,
     isSuccess,
+    isMintingDemo,
+    demoMintSuccess,
     generateFace,
     generateStyledAvatar,
     handleMintNFT,
@@ -73,6 +75,8 @@ const NFTMinting = () => {
           isPending={isPending}
           isConfirming={isConfirming}
           isSuccess={isSuccess}
+          isMintingDemo={isMintingDemo}
+          demoMintSuccess={demoMintSuccess}
           generateFace={generateFace}
           generateStyledAvatar={generateStyledAvatar}
           handleMintNFT={handleMintNFT}

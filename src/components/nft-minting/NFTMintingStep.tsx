@@ -8,6 +8,8 @@ interface NFTMintingStepProps {
   isPending: boolean;
   isConfirming: boolean;
   isSuccess: boolean;
+  isMintingDemo?: boolean;
+  demoMintSuccess?: boolean;
   handleMintNFT: () => void;
   onBack: () => void;
 }
@@ -17,6 +19,8 @@ export const NFTMintingStep = ({
   isPending,
   isConfirming,
   isSuccess,
+  isMintingDemo,
+  demoMintSuccess,
   handleMintNFT,
   onBack
 }: NFTMintingStepProps) => {
@@ -58,16 +62,36 @@ export const NFTMintingStep = ({
         </div>
       </div>
 
+      {isMintingDemo && (
+        <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <LoadingSpinner size="lg" className="text-white" />
+          </div>
+          <h3 className="text-xl font-bold text-blue-800 dark:text-blue-400 mb-2">
+            Demo Mode - Simulating Mint
+          </h3>
+          <p className="text-blue-700 dark:text-blue-300 mb-2">
+            Demonstrating the NFT minting process...
+          </p>
+          <p className="text-sm text-blue-600 dark:text-blue-400">
+            Note: This is a fallback demonstration for insufficient funds
+          </p>
+        </div>
+      )}
+
       {isSuccess && (
         <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
           <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Sparkles className="h-8 w-8 text-white" />
           </div>
           <h3 className="text-xl font-bold text-green-800 dark:text-green-400 mb-2">
-            NFT Minted Successfully!
+            {demoMintSuccess ? 'Demo NFT "Minted" Successfully!' : 'NFT Minted Successfully!'}
           </h3>
           <p className="text-green-700 dark:text-green-300 mb-4">
-            Your ZK Identity NFT has been created and added to your wallet.
+            {demoMintSuccess 
+              ? 'This was a demonstration. Connect wallet with sufficient funds for real minting.'
+              : 'Your ZK Identity NFT has been created and added to your wallet.'
+            }
           </p>
           <p className="text-sm text-green-600 dark:text-green-400">
             Redirecting to dashboard...
@@ -87,7 +111,7 @@ export const NFTMintingStep = ({
           {isPending || isConfirming ? (
             <>
               <LoadingSpinner size="sm" className="mr-2" />
-              {isPending ? 'Minting...' : 'Confirming...'}
+              {isMintingDemo ? 'Demo Minting...' : isPending ? 'Minting...' : 'Confirming...'}
             </>
           ) : isSuccess ? (
             <>

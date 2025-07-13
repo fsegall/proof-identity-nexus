@@ -18,6 +18,8 @@ export const useNFTMinting = () => {
   const [isGeneratingFace, setIsGeneratingFace] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string>('');
   const [generationProgress, setGenerationProgress] = useState<string>('');
+  const [isMintingDemo, setIsMintingDemo] = useState(false);
+  const [demoMintSuccess, setDemoMintSuccess] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
   const { account } = useWallet();
@@ -238,8 +240,40 @@ export const useNFTMinting = () => {
 
     try {
       await mint();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Minting error:', error);
+      
+      // Check if it's an insufficient funds error
+      if (error?.message?.includes('insufficient') || 
+          error?.code === 'INSUFFICIENT_FUNDS' ||
+          error?.message?.includes('gas') ||
+          error?.reason?.includes('insufficient')) {
+        
+        // Show fallback demo mint for MVP
+        toast({
+          title: 'Demo Mode - Insufficient Funds',
+          description: 'Simulating NFT mint process for demonstration purposes.',
+          variant: 'default'
+        });
+        
+        // Simulate the minting process for demo
+        setIsMintingDemo(true);
+        
+        setTimeout(() => {
+          setIsMintingDemo(false);
+          setDemoMintSuccess(true);
+          
+          toast({
+            title: 'Demo NFT "Minted" Successfully!',
+            description: 'This is a demonstration. Connect wallet with sufficient funds for real minting.',
+          });
+          
+          setTimeout(() => navigate('/dashboard'), 2000);
+        }, 3000);
+        
+        return;
+      }
+      
       toast({
         title: 'Minting Failed',
         description: 'Failed to mint NFT. Please try again.',
@@ -267,9 +301,11 @@ export const useNFTMinting = () => {
     generationProgress,
     user,
     authLoading,
-    isPending,
+    isPending: isPending || isMintingDemo,
     isConfirming,
-    isSuccess,
+    isSuccess: isSuccess || demoMintSuccess,
+    isMintingDemo,
+    demoMintSuccess,
     generateFace,
     generateStyledAvatar,
     handleMintNFT,
