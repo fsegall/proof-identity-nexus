@@ -141,6 +141,7 @@ export const useNFTMinting = () => {
             });
             
             setStyledAvatar(styledImageData);
+            console.log('✅ Styled avatar set:', styledImageData.substring(0, 50) + '...');
             fabricCanvas.dispose();
             resolve(styledImageData);
           }, 100);

@@ -43,6 +43,8 @@ export const NFTMintingStepContent = ({
   setCurrentStep,
   navigate
 }: StepContentProps) => {
+  console.log('NFTMintingStepContent - currentStep:', currentStep, 'styledAvatar:', styledAvatar ? 'exists' : 'null');
+  
   const getStepTitle = () => {
     switch (currentStep) {
       case 1: return "Upload Your Avatar";
@@ -102,6 +104,13 @@ export const NFTMintingStepContent = ({
               handleMintNFT={handleMintNFT}
               onBack={() => setCurrentStep(2)}
             />
+          )}
+
+          {currentStep === 3 && !styledAvatar && (
+            <div className="text-center p-6">
+              <p className="text-muted-foreground">No styled avatar found. Please go back and style your image.</p>
+              <p className="text-xs text-muted-foreground mt-2">Debug: styledAvatar = {styledAvatar ? 'exists' : 'null'}</p>
+            </div>
           )}
         </CardContent>
       </Card>
