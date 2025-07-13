@@ -243,10 +243,26 @@ export const useNFTMinting = () => {
     } catch (error: any) {
       console.error('Minting error:', error);
       
+      // Check if user rejected the transaction
+      if (error?.code === 4001 || 
+          error?.message?.includes('User rejected') ||
+          error?.message?.includes('rejected') ||
+          error?.message?.includes('denied by the user') ||
+          error?.code === 'ACTION_REJECTED') {
+        
+        toast({
+          title: 'Transaction Cancelled',
+          description: 'You cancelled the transaction. Try again when ready.',
+          variant: 'default'
+        });
+        return;
+      }
+      
       // Check if it's an insufficient funds error
       if (error?.message?.includes('insufficient') || 
           error?.code === 'INSUFFICIENT_FUNDS' ||
           error?.message?.includes('gas') ||
+          error?.message?.includes('balance') ||
           error?.reason?.includes('insufficient')) {
         
         // Show fallback demo mint for MVP
