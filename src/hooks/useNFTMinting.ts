@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIdentityNFTMint } from '@/hooks/useIdentityNFT';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,10 +24,45 @@ export const useNFTMinting = () => {
   const { user, loading: authLoading } = useAuth();
   const { account } = useWallet();
 
-  const { mint, isPending, isConfirming, isSuccess } = useIdentityNFTMint({
+  const { mint, isPending, isConfirming, isSuccess, hash } = useIdentityNFTMint({
     address: account || '0x0',
     imageData: styledAvatar || avatarPreview || undefined
   });
+
+  // Update user avatar when NFT mint is successful
+  useEffect(() => {
+    const updateUserAvatar = async () => {
+      if (isSuccess && hash && styledAvatar && user?.id) {
+        try {
+          console.log('✅ NFT minted successfully! Transaction hash:', hash);
+          
+          // Save the styled avatar to user's profile
+          const { error } = await supabase
+            .from('users')
+            .update({ avatar_url: styledAvatar })
+            .eq('id', user.id);
+          
+          if (error) {
+            console.error('Error updating avatar:', error);
+          } else {
+            console.log('✅ Avatar saved to user profile');
+          }
+          
+          toast({
+            title: 'NFT Minted Successfully!',
+            description: `Your ZK Identity NFT has been minted. Transaction: ${hash}`,
+          });
+          
+          // Navigate to dashboard after successful mint
+          setTimeout(() => navigate('/dashboard'), 2000);
+        } catch (error) {
+          console.error('Error saving avatar:', error);
+        }
+      }
+    };
+
+    updateUserAvatar();
+  }, [isSuccess, hash, styledAvatar, user?.id, toast, navigate]);
 
   const generateFace = async (prompt: string) => {
     setIsGeneratingFace(true);
@@ -275,6 +310,24 @@ export const useNFTMinting = () => {
         // Simulate the minting process for demo
         setIsMintingDemo(true);
         
+        // Save the styled avatar to user's profile
+        if (styledAvatar && user?.id) {
+          try {
+            const { error } = await supabase
+              .from('users')
+              .update({ avatar_url: styledAvatar })
+              .eq('id', user.id);
+            
+            if (error) {
+              console.error('Error updating avatar:', error);
+            } else {
+              console.log('✅ Avatar saved to user profile');
+            }
+          } catch (error) {
+            console.error('Error saving avatar:', error);
+          }
+        }
+        
         setTimeout(() => {
           setIsMintingDemo(false);
           setDemoMintSuccess(true);
@@ -313,6 +366,24 @@ export const useNFTMinting = () => {
           
           setIsMintingDemo(true);
           
+          // Save the styled avatar to user's profile
+          if (styledAvatar && user?.id) {
+            try {
+              const { error } = await supabase
+                .from('users')
+                .update({ avatar_url: styledAvatar })
+                .eq('id', user.id);
+              
+              if (error) {
+                console.error('Error updating avatar:', error);
+              } else {
+                console.log('✅ Avatar saved to user profile');
+              }
+            } catch (error) {
+              console.error('Error saving avatar:', error);
+            }
+          }
+          
           setTimeout(() => {
             setIsMintingDemo(false);
             setDemoMintSuccess(true);
@@ -346,7 +417,7 @@ export const useNFTMinting = () => {
     }
   };
 
-  const startDemoMode = () => {
+  const startDemoMode = async () => {
     console.log('🎭 Starting demo mode manually');
     toast({
       title: 'Demo Mode Started',
@@ -355,6 +426,24 @@ export const useNFTMinting = () => {
     });
     
     setIsMintingDemo(true);
+    
+    // Save the styled avatar to user's profile
+    if (styledAvatar && user?.id) {
+      try {
+        const { error } = await supabase
+          .from('users')
+          .update({ avatar_url: styledAvatar })
+          .eq('id', user.id);
+        
+        if (error) {
+          console.error('Error updating avatar:', error);
+        } else {
+          console.log('✅ Avatar saved to user profile');
+        }
+      } catch (error) {
+        console.error('Error saving avatar:', error);
+      }
+    }
     
     setTimeout(() => {
       setIsMintingDemo(false);
