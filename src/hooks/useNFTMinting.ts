@@ -229,7 +229,10 @@ export const useNFTMinting = () => {
   };
 
   const handleMintNFT = async () => {
+    console.log('🎯 handleMintNFT called');
+    
     if (!account) {
+      console.log('❌ No account connected');
       toast({
         title: 'Wallet Not Connected',
         description: 'Please connect your wallet to mint NFT',
@@ -238,10 +241,19 @@ export const useNFTMinting = () => {
       return;
     }
 
+    console.log('✅ Account connected:', account);
+
     try {
+      console.log('🚀 Calling mint function...');
       await mint();
+      console.log('✅ Mint function completed');
     } catch (error: any) {
-      console.error('Minting error:', error);
+      console.error('❌ Minting error details:', {
+        message: error?.message,
+        code: error?.code,
+        reason: error?.reason,
+        error: error
+      });
       
       // Check if user rejected the transaction
       if (error?.code === 4001 || 
@@ -250,6 +262,7 @@ export const useNFTMinting = () => {
           error?.message?.includes('denied by the user') ||
           error?.code === 'ACTION_REJECTED') {
         
+        console.log('🚫 User rejected transaction');
         toast({
           title: 'Transaction Cancelled',
           description: 'You cancelled the transaction. Try again when ready.',
@@ -265,6 +278,7 @@ export const useNFTMinting = () => {
           error?.message?.includes('balance') ||
           error?.reason?.includes('insufficient')) {
         
+        console.log('💰 Insufficient funds detected - starting demo mode');
         // Show fallback demo mint for MVP
         toast({
           title: 'Demo Mode - Insufficient Funds',
@@ -290,6 +304,7 @@ export const useNFTMinting = () => {
         return;
       }
       
+      console.log('❌ Unknown minting error');
       toast({
         title: 'Minting Failed',
         description: 'Failed to mint NFT. Please try again.',
