@@ -26,6 +26,7 @@ const NFTMinting = () => {
     generateFace,
     generateStyledAvatar,
     handleMintNFT,
+    startDemoMode,
     skipStyling,
     navigate
   } = useNFTMinting();
@@ -80,6 +81,7 @@ const NFTMinting = () => {
           generateFace={generateFace}
           generateStyledAvatar={generateStyledAvatar}
           handleMintNFT={handleMintNFT}
+          startDemoMode={startDemoMode}
           skipStyling={skipStyling}
           setCurrentStep={setCurrentStep}
           navigate={navigate}

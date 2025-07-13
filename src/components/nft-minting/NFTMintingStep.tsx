@@ -11,6 +11,7 @@ interface NFTMintingStepProps {
   isMintingDemo?: boolean;
   demoMintSuccess?: boolean;
   handleMintNFT: () => void;
+  startDemoMode: () => void;
   onBack: () => void;
 }
 
@@ -22,6 +23,7 @@ export const NFTMintingStep = ({
   isMintingDemo,
   demoMintSuccess,
   handleMintNFT,
+  startDemoMode,
   onBack
 }: NFTMintingStepProps) => {
   console.log('NFTMintingStep - styledAvatar received:', styledAvatar ? styledAvatar.substring(0, 50) + '...' : 'null');
@@ -103,28 +105,38 @@ export const NFTMintingStep = ({
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button 
-          onClick={handleMintNFT}
-          disabled={isPending || isConfirming || isSuccess}
-          className="btn-gradient"
-        >
-          {isPending || isConfirming ? (
-            <>
-              <LoadingSpinner size="sm" className="mr-2" />
-              {isMintingDemo ? 'Demo Minting...' : isPending ? 'Minting...' : 'Confirming...'}
-            </>
-          ) : isSuccess ? (
-            <>
-              <Sparkles className="h-4 w-4 mr-2" />
-              Minted Successfully!
-            </>
-          ) : (
-            <>
-              <Wand2 className="h-4 w-4 mr-2" />
-              Mint NFT
-            </>
-          )}
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            variant="ghost"
+            onClick={startDemoMode}
+            disabled={isPending || isConfirming || isSuccess}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Demo Mode
+          </Button>
+          <Button 
+            onClick={handleMintNFT}
+            disabled={isPending || isConfirming || isSuccess}
+            className="btn-gradient"
+          >
+            {isPending || isConfirming ? (
+              <>
+                <LoadingSpinner size="sm" className="mr-2" />
+                {isMintingDemo ? 'Demo Minting...' : isPending ? 'Minting...' : 'Confirming...'}
+              </>
+            ) : isSuccess ? (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Minted Successfully!
+              </>
+            ) : (
+              <>
+                <Wand2 className="h-4 w-4 mr-2" />
+                Mint NFT
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

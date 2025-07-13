@@ -346,6 +346,29 @@ export const useNFTMinting = () => {
     }
   };
 
+  const startDemoMode = () => {
+    console.log('🎭 Starting demo mode manually');
+    toast({
+      title: 'Demo Mode Started',
+      description: 'Simulating NFT mint process for demonstration purposes.',
+      variant: 'default'
+    });
+    
+    setIsMintingDemo(true);
+    
+    setTimeout(() => {
+      setIsMintingDemo(false);
+      setDemoMintSuccess(true);
+      
+      toast({
+        title: 'Demo NFT "Minted" Successfully!',
+        description: 'This is a demonstration. Connect wallet with sufficient funds for real minting.',
+      });
+      
+      setTimeout(() => navigate('/dashboard'), 2000);
+    }, 3000);
+  };
+
   const skipStyling = () => {
     if (avatarPreview) {
       setStyledAvatar(avatarPreview);
@@ -373,6 +396,7 @@ export const useNFTMinting = () => {
     generateFace,
     generateStyledAvatar,
     handleMintNFT,
+    startDemoMode,
     skipStyling,
     navigate
   };

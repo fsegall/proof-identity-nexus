@@ -19,6 +19,7 @@ interface StepContentProps {
   generateFace: (prompt: string) => void;
   generateStyledAvatar: (style: string) => void;
   handleMintNFT: () => void;
+  startDemoMode: () => void;
   skipStyling: () => void;
   setCurrentStep: (step: number) => void;
   navigate: (path: string) => void;
@@ -40,6 +41,7 @@ export const NFTMintingStepContent = ({
   generateFace,
   generateStyledAvatar,
   handleMintNFT,
+  startDemoMode,
   skipStyling,
   setCurrentStep,
   navigate
@@ -104,6 +106,7 @@ export const NFTMintingStepContent = ({
             isMintingDemo={isMintingDemo}
             demoMintSuccess={demoMintSuccess}
             handleMintNFT={handleMintNFT}
+            startDemoMode={startDemoMode}
             onBack={() => setCurrentStep(2)}
           />
           )}
