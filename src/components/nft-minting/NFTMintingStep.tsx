@@ -20,15 +20,19 @@ export const NFTMintingStep = ({
   handleMintNFT,
   onBack
 }: NFTMintingStepProps) => {
+  console.log('NFTMintingStep - styledAvatar received:', styledAvatar ? styledAvatar.substring(0, 50) + '...' : 'null');
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col items-center">
         <div className="w-40 h-40 rounded-lg overflow-hidden border-4 border-primary/20 bg-gradient-to-br from-primary/10 to-accent/10">
-          <img 
-            src={styledAvatar} 
-            alt="Final Avatar" 
-            className="w-full h-full object-cover"
-          />
+           <img 
+             src={styledAvatar} 
+             alt="Final Avatar" 
+             className="w-full h-full object-cover"
+             onLoad={() => console.log('✅ Image loaded successfully')}
+             onError={(e) => console.error('❌ Image failed to load:', e)}
+           />
         </div>
         <div className="text-center mt-4">
           <h3 className="font-semibold text-lg">Your ZK Identity NFT</h3>
