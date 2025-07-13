@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import Konva from 'konva';
 
 export const useNFTMinting = () => {
   const navigate = useNavigate();
@@ -60,50 +61,6 @@ export const useNFTMinting = () => {
     }
   };
 
-  const applyStyleToCanvas = (ctx: CanvasRenderingContext2D, imageData: ImageData, style: string) => {
-    const data = imageData.data;
-    
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      
-      switch (style) {
-        case 'cyberpunk':
-          // Neon cyberpunk effect
-          data[i] = Math.min(255, r * 1.3 + 50);     // More red
-          data[i + 1] = Math.min(255, g * 1.1 + 30); // Slightly more green
-          data[i + 2] = Math.min(255, b * 1.5 + 80); // Much more blue
-          break;
-          
-        case 'fantasy':
-          // Warm vintage sepia effect
-          data[i] = Math.min(255, (r * 0.393) + (g * 0.769) + (b * 0.189));
-          data[i + 1] = Math.min(255, (r * 0.349) + (g * 0.686) + (b * 0.168));
-          data[i + 2] = Math.min(255, (r * 0.272) + (g * 0.534) + (b * 0.131));
-          break;
-          
-        case 'artistic':
-          // Enhanced contrast and saturation
-          const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-          const factor = 1.8; // Saturation factor
-          data[i] = Math.min(255, gray + factor * (r - gray));
-          data[i + 1] = Math.min(255, gray + factor * (g - gray));
-          data[i + 2] = Math.min(255, gray + factor * (b - gray));
-          break;
-          
-        case 'minimal':
-          // Grayscale with enhanced contrast
-          const grayValue = Math.min(255, (0.299 * r + 0.587 * g + 0.114 * b) * 1.3);
-          data[i] = grayValue;
-          data[i + 1] = grayValue;
-          data[i + 2] = grayValue;
-          break;
-      }
-    }
-    
-    return imageData;
-  };
 
   const generateStyledAvatar = async (style: string) => {
     if (!avatarPreview) {
@@ -117,63 +74,126 @@ export const useNFTMinting = () => {
     
     setIsGeneratingStyle(true);
     setSelectedStyle(style);
-    setGenerationProgress('Preparing your image...');
+    setGenerationProgress('Creating professional filters...');
     
     try {
-      console.log('=== STARTING AVATAR STYLING ===');
+      console.log('=== STARTING KONVA STYLING ===');
       console.log('Style:', style);
       
-      setGenerationProgress('Applying filter...');
+      setGenerationProgress('Loading image...');
       
-      // Create a temporary canvas for processing
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
+      // Create Konva stage (hidden)
+      const stage = new Konva.Stage({
+        container: document.createElement('div'),
+        width: 512,
+        height: 512
+      });
       
-      if (!tempCtx) {
-        throw new Error('Could not create canvas context');
-      }
+      const layer = new Konva.Layer();
+      stage.add(layer);
       
       // Load the image
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
+      const imageObj = new Image();
+      imageObj.crossOrigin = 'anonymous';
       
       await new Promise((resolve, reject) => {
-        img.onload = () => {
-          tempCanvas.width = img.width;
-          tempCanvas.height = img.height;
-          tempCtx.drawImage(img, 0, 0);
+        imageObj.onload = () => {
+          // Create Konva image
+          const konvaImage = new Konva.Image({
+            image: imageObj,
+            width: 512,
+            height: 512
+          });
           
-          // Get image data for pixel manipulation
-          const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+          setGenerationProgress(`Applying ${style} filter...`);
           
-          // Apply the selected filter
-          const filteredImageData = applyStyleToCanvas(tempCtx, imageData, style);
+          // Apply professional filters based on style
+          switch (style) {
+            case 'cyberpunk':
+              konvaImage.filters([
+                Konva.Filters.HSV,
+                Konva.Filters.Contrast,
+                Konva.Filters.Brighten
+              ]);
+              konvaImage.cache();
+              konvaImage.hue(200); // Blue/purple tint
+              konvaImage.saturation(1.5); // More vibrant
+              konvaImage.contrast(0.3); // Higher contrast
+              konvaImage.brightness(0.2); // Slightly brighter
+              break;
+              
+            case 'fantasy':
+              konvaImage.filters([
+                Konva.Filters.HSV,
+                Konva.Filters.Brighten
+              ]);
+              konvaImage.cache();
+              // Warm sepia effect through HSV manipulation
+              konvaImage.hue(30); // Warm orange/brown tint
+              konvaImage.saturation(1.3); // Enhanced colors
+              konvaImage.brightness(0.1); // Slightly warmer
+              break;
+              
+            case 'artistic':
+              konvaImage.filters([
+                Konva.Filters.HSV,
+                Konva.Filters.Contrast,
+                Konva.Filters.Emboss
+              ]);
+              konvaImage.cache();
+              konvaImage.saturation(2.0); // Very vibrant
+              konvaImage.contrast(0.4); // High contrast
+              konvaImage.embossStrength(0.3); // Artistic texture
+              break;
+              
+            case 'minimal':
+              konvaImage.filters([
+                Konva.Filters.Grayscale,
+                Konva.Filters.Contrast,
+                Konva.Filters.Brighten
+              ]);
+              konvaImage.cache();
+              konvaImage.contrast(0.3); // Enhanced contrast
+              konvaImage.brightness(0.1); // Slightly brighter
+              break;
+          }
           
-          // Put the filtered data back
-          tempCtx.putImageData(filteredImageData, 0, 0);
+          layer.add(konvaImage);
+          layer.draw();
           
-          // Get the styled image as data URL
-          const styledImageData = tempCanvas.toDataURL('image/png', 0.9);
+          setGenerationProgress('Finalizing...');
           
-          setStyledAvatar(styledImageData);
-          console.log('✅ Styled avatar set:', styledImageData.substring(0, 50) + '...');
-          resolve(styledImageData);
+          // Export as data URL
+          setTimeout(() => {
+            const styledImageData = stage.toDataURL({
+              mimeType: 'image/png',
+              quality: 0.9,
+              pixelRatio: 1
+            });
+            
+            setStyledAvatar(styledImageData);
+            console.log('✅ Konva styled avatar set:', styledImageData.substring(0, 50) + '...');
+            
+            // Cleanup
+            stage.destroy();
+            resolve(styledImageData);
+          }, 100);
         };
         
-        img.onerror = () => reject(new Error('Failed to load image'));
-        img.src = avatarPreview;
+        imageObj.onerror = () => reject(new Error('Failed to load image'));
+        imageObj.src = avatarPreview;
       });
       
       setGenerationProgress('');
       toast({
         title: 'Avatar Styled Successfully!',
-        description: `Your photo has been transformed with the ${style} style.`
+        description: `Your photo has been transformed with professional ${style} filters.`
       });
       
       setCurrentStep(3);
       
     } catch (error) {
-      console.error('=== STYLING ERROR ===');
+      console.error('=== KONVA STYLING ERROR ===');
       console.error('Error:', error);
       setGenerationProgress('');
       toast({

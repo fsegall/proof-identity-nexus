@@ -14,10 +14,10 @@ interface StyleSelectionStepProps {
 }
 
 const styles = [
-  { id: 'cyberpunk', name: 'Cyberpunk', icon: Zap, description: 'Neon glow effect' },
-  { id: 'fantasy', name: 'Fantasy', icon: Crown, description: 'Warm vintage filter' },
-  { id: 'artistic', name: 'Artistic', icon: Palette, description: 'Oil painting style' },
-  { id: 'minimal', name: 'Minimal', icon: Sparkles, description: 'Clean monochrome' }
+  { id: 'cyberpunk', name: 'Cyberpunk', icon: Zap, description: 'Neon blue/purple tint' },
+  { id: 'fantasy', name: 'Fantasy', icon: Crown, description: 'Warm sepia effect' },
+  { id: 'artistic', name: 'Artistic', icon: Palette, description: 'Embossed texture' },
+  { id: 'minimal', name: 'Minimal', icon: Sparkles, description: 'Enhanced grayscale' }
 ];
 
 export const StyleSelectionStep = ({
