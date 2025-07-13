@@ -10,10 +10,10 @@ const NFTMinting = () => {
   const {
     currentStep,
     setCurrentStep,
-    avatarFile,
     avatarPreview,
     styledAvatar,
     isGeneratingStyle,
+    isGeneratingFace,
     selectedStyle,
     generationProgress,
     user,
@@ -21,8 +21,7 @@ const NFTMinting = () => {
     isPending,
     isConfirming,
     isSuccess,
-    fileInputRef,
-    handleAvatarUpload,
+    generateFace,
     generateStyledAvatar,
     handleMintNFT,
     skipStyling,
@@ -66,16 +65,15 @@ const NFTMinting = () => {
         <NFTMintingStepContent
           currentStep={currentStep}
           avatarPreview={avatarPreview}
-          avatarFile={avatarFile}
           styledAvatar={styledAvatar}
           isGeneratingStyle={isGeneratingStyle}
+          isGeneratingFace={isGeneratingFace}
           selectedStyle={selectedStyle}
           generationProgress={generationProgress}
           isPending={isPending}
           isConfirming={isConfirming}
           isSuccess={isSuccess}
-          fileInputRef={fileInputRef}
-          handleAvatarUpload={handleAvatarUpload}
+          generateFace={generateFace}
           generateStyledAvatar={generateStyledAvatar}
           handleMintNFT={handleMintNFT}
           skipStyling={skipStyling}

@@ -1,22 +1,20 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AvatarUploadStep } from './AvatarUploadStep';
+import { FaceGenerationStep } from './FaceGenerationStep';
 import { StyleSelectionStep } from './StyleSelectionStep';
 import { NFTMintingStep } from './NFTMintingStep';
 
 interface StepContentProps {
   currentStep: number;
   avatarPreview: string | null;
-  avatarFile: File | null;
   styledAvatar: string | null;
   isGeneratingStyle: boolean;
+  isGeneratingFace: boolean;
   selectedStyle: string;
   generationProgress: string;
   isPending: boolean;
   isConfirming: boolean;
   isSuccess: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement>;
-  handleAvatarUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  generateFace: (prompt: string) => void;
   generateStyledAvatar: (style: string) => void;
   handleMintNFT: () => void;
   skipStyling: () => void;
@@ -27,16 +25,15 @@ interface StepContentProps {
 export const NFTMintingStepContent = ({
   currentStep,
   avatarPreview,
-  avatarFile,
   styledAvatar,
   isGeneratingStyle,
+  isGeneratingFace,
   selectedStyle,
   generationProgress,
   isPending,
   isConfirming,
   isSuccess,
-  fileInputRef,
-  handleAvatarUpload,
+  generateFace,
   generateStyledAvatar,
   handleMintNFT,
   skipStyling,
@@ -47,8 +44,8 @@ export const NFTMintingStepContent = ({
   
   const getStepTitle = () => {
     switch (currentStep) {
-      case 1: return "Upload Your Avatar";
-      case 2: return "Style Your Avatar";
+      case 1: return "Generate Your Face";
+      case 2: return "Style Your Face";
       case 3: return "Mint Your NFT";
       default: return "";
     }
@@ -56,8 +53,8 @@ export const NFTMintingStepContent = ({
 
   const getStepDescription = () => {
     switch (currentStep) {
-      case 1: return "Choose a photo to represent your digital identity";
-      case 2: return "Transform your avatar with AI-powered styling (optional)";
+      case 1: return "Create an AI-generated face for your digital identity";
+      case 2: return "Transform your face with AI-powered styling (optional)";
       case 3: return "Create your unique identity NFT on the blockchain";
       default: return "";
     }
@@ -73,11 +70,10 @@ export const NFTMintingStepContent = ({
         
         <CardContent className="space-y-6">
           {currentStep === 1 && (
-            <AvatarUploadStep
+            <FaceGenerationStep
               avatarPreview={avatarPreview}
-              avatarFile={avatarFile}
-              fileInputRef={fileInputRef}
-              handleAvatarUpload={handleAvatarUpload}
+              isGenerating={isGeneratingFace}
+              onGenerate={generateFace}
               onNext={() => setCurrentStep(2)}
               onBack={() => navigate('/attestation')}
             />

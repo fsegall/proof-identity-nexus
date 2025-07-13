@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIdentityNFTMint } from '@/hooks/useIdentityNFT';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,14 +9,13 @@ import Konva from 'konva';
 
 export const useNFTMinting = () => {
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
   const [currentStep, setCurrentStep] = useState(1);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [styledAvatar, setStyledAvatar] = useState<string | null>(null);
   const [isGeneratingStyle, setIsGeneratingStyle] = useState(false);
+  const [isGeneratingFace, setIsGeneratingFace] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string>('');
   const [generationProgress, setGenerationProgress] = useState<string>('');
 
@@ -28,45 +27,66 @@ export const useNFTMinting = () => {
     imageData: styledAvatar || avatarPreview || undefined
   });
 
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: 'Invalid file type',
-          description: 'Please select a valid image file',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: 'File too large',
-          description: 'File size must be less than 10MB',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      setAvatarFile(file);
+  const generateFace = async (prompt: string) => {
+    setIsGeneratingFace(true);
+    
+    try {
+      console.log('=== STARTING FACE GENERATION ===');
+      console.log('Prompt:', prompt);
       
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setAvatarPreview(result);
-        console.log('Avatar preview set:', result ? 'Data loaded successfully' : 'Failed to load data');
-      };
-      reader.readAsDataURL(file);
+      const { data, error } = await supabase.functions.invoke('generate-face', {
+        body: { prompt }
+      });
+
+      console.log('Face generation response:', { data, error });
+
+      if (error) {
+        console.error('=== FACE GENERATION ERROR ===');
+        console.error('Error:', error);
+        
+        let errorMessage = 'Failed to generate face.';
+        
+        if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
+          errorMessage = 'API authentication failed. Please check if your Hugging Face token is configured.';
+        } else if (error.message?.includes('timeout') || error.message?.includes('408')) {
+          errorMessage = 'Generation took too long. Try again or simplify your prompt.';
+        } else if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+          errorMessage = 'Too many requests. Please wait a moment and try again.';
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      if (data?.image) {
+        console.log('✅ Successfully generated face');
+        setAvatarPreview(data.image);
+        
+        toast({
+          title: 'Face Generated Successfully!',
+          description: `Your AI-generated face is ready for styling.`
+        });
+      } else {
+        throw new Error('No image was returned from the AI service');
+      }
+      
+    } catch (error) {
+      console.error('=== FACE GENERATION ERROR ===');
+      console.error('Error:', error);
+      toast({
+        title: 'Face Generation Failed',
+        description: error.message || 'Failed to generate face. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGeneratingFace(false);
     }
   };
-
 
   const generateStyledAvatar = async (style: string) => {
     if (!avatarPreview) {
       toast({
-        title: 'No Image Selected',
-        description: 'Please upload an image first',
+        title: 'No Image Available',
+        description: 'Please generate a face first',
         variant: 'destructive'
       });
       return;
@@ -187,7 +207,7 @@ export const useNFTMinting = () => {
       setGenerationProgress('');
       toast({
         title: 'Avatar Styled Successfully!',
-        description: `Your photo has been transformed with professional ${style} filters.`
+        description: `Your face has been transformed with professional ${style} filters.`
       });
       
       setCurrentStep(3);
@@ -232,28 +252,25 @@ export const useNFTMinting = () => {
     if (avatarPreview) {
       setStyledAvatar(avatarPreview);
       setCurrentStep(3);
-      console.log('Skipping styling, using original image');
+      console.log('Skipping styling, using original generated image');
     }
   };
 
   return {
     currentStep,
     setCurrentStep,
-    avatarFile,
     avatarPreview,
     styledAvatar,
     isGeneratingStyle,
+    isGeneratingFace,
     selectedStyle,
     generationProgress,
     user,
     authLoading,
-    account,
-    mint,
     isPending,
     isConfirming,
     isSuccess,
-    fileInputRef,
-    handleAvatarUpload,
+    generateFace,
     generateStyledAvatar,
     handleMintNFT,
     skipStyling,
