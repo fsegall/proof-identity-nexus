@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Canvas as FabricCanvas, FabricImage } from 'fabric';
 
 export const useNFTMinting = () => {
   const navigate = useNavigate();
@@ -60,6 +61,33 @@ export const useNFTMinting = () => {
     }
   };
 
+  const applyFilter = (canvas: FabricCanvas, style: string) => {
+    const canvasEl = canvas.getElement();
+    const ctx = canvasEl.getContext('2d');
+    if (!ctx) return;
+
+    switch (style) {
+      case 'cyberpunk':
+        // Neon glow effect
+        canvasEl.style.filter = 'contrast(1.3) brightness(1.2) hue-rotate(200deg) saturate(1.5)';
+        break;
+      case 'fantasy':
+        // Warm vintage effect  
+        canvasEl.style.filter = 'sepia(0.3) contrast(1.2) brightness(1.1) saturate(1.4)';
+        break;
+      case 'artistic':
+        // Oil painting effect
+        canvasEl.style.filter = 'contrast(1.5) saturate(1.8) blur(0.5px)';
+        break;
+      case 'minimal':
+        // Clean monochrome
+        canvasEl.style.filter = 'grayscale(0.7) contrast(1.3) brightness(1.1)';
+        break;
+      default:
+        canvasEl.style.filter = 'none';
+    }
+  };
+
   const generateStyledAvatar = async (style: string) => {
     if (!avatarPreview) {
       toast({
@@ -72,72 +100,63 @@ export const useNFTMinting = () => {
     
     setIsGeneratingStyle(true);
     setSelectedStyle(style);
-    setGenerationProgress('Preparing your image for AI styling...');
+    setGenerationProgress('Preparing your image...');
     
     try {
       console.log('=== STARTING AVATAR STYLING ===');
       console.log('Style:', style);
-      console.log('Image data available:', avatarPreview ? 'Yes' : 'No');
-      console.log('Image data length:', avatarPreview?.length || 0);
       
-      const prompt = `Transform this portrait into ${style} style while maintaining the person's facial features and identity`;
+      setGenerationProgress('Applying filter...');
       
-      setGenerationProgress('Sending to AI service...');
+      // Create a temporary canvas for processing
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
       
-      const { data, error } = await supabase.functions.invoke('generate-styled-avatar', {
-        body: {
-          prompt,
-          style: style.toLowerCase(),
-          imageData: avatarPreview
-        }
+      if (!tempCtx) {
+        throw new Error('Could not create canvas context');
+      }
+      
+      // Load the image
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        img.onload = () => {
+          tempCanvas.width = img.width;
+          tempCanvas.height = img.height;
+          tempCtx.drawImage(img, 0, 0);
+          
+          // Create Fabric canvas for filters
+          const fabricCanvas = new FabricCanvas(tempCanvas);
+          
+          // Apply the selected filter
+          applyFilter(fabricCanvas, style);
+          
+          // Get the styled image as data URL
+          setTimeout(() => {
+            const styledImageData = fabricCanvas.toDataURL({
+              format: 'png',
+              quality: 0.9,
+              multiplier: 1
+            });
+            
+            setStyledAvatar(styledImageData);
+            fabricCanvas.dispose();
+            resolve(styledImageData);
+          }, 100);
+        };
+        
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = avatarPreview;
       });
-
-      console.log('Edge function response:', { data, error });
-
-      if (error) {
-        console.error('=== EDGE FUNCTION ERROR ===');
-        console.error('Error:', error);
-        
-        let errorMessage = 'Failed to generate styled avatar.';
-        
-        // Handle specific error types
-        if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
-          errorMessage = 'API authentication failed. Please check if your Hugging Face token has proper permissions (write/inference access required).';
-        } else if (error.message?.includes('timeout') || error.message?.includes('408')) {
-          errorMessage = 'Generation took too long. Try again or choose a different style.';
-        } else if (error.message?.includes('rate limit') || error.message?.includes('429')) {
-          errorMessage = 'Too many requests. Please wait a moment and try again.';
-        } else if (error.message?.includes('service unavailable') || error.message?.includes('503')) {
-          errorMessage = 'AI service is temporarily overloaded. Please try again in a few moments.';
-        } else if (error.message?.includes('Invalid image data')) {
-          errorMessage = 'There was an issue processing your image. Try uploading a different photo.';
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      if (data?.image) {
-        console.log('✅ Successfully generated styled avatar');
-        setStyledAvatar(data.image);
-        setGenerationProgress('');
-        
-        if (data.warning) {
-          toast({
-            title: 'Avatar Generated with Fallback',
-            description: data.warning,
-            variant: 'default'
-          });
-        } else {
-          toast({
-            title: 'Avatar Styled Successfully!',
-            description: `Your photo has been transformed with the ${style} style.`
-          });
-        }
-        
-        setCurrentStep(3);
-      } else {
-        throw new Error('No image was returned from the AI service');
-      }
+      
+      setGenerationProgress('');
+      toast({
+        title: 'Avatar Styled Successfully!',
+        description: `Your photo has been transformed with the ${style} style.`
+      });
+      
+      setCurrentStep(3);
       
     } catch (error) {
       console.error('=== STYLING ERROR ===');
