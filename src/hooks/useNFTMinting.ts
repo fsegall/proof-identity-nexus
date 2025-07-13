@@ -255,28 +255,14 @@ export const useNFTMinting = () => {
         error: error
       });
       
-      // Check if user rejected the transaction
-      if (error?.code === 4001 || 
-          error?.message?.includes('User rejected') ||
-          error?.message?.includes('rejected') ||
-          error?.message?.includes('denied by the user') ||
-          error?.code === 'ACTION_REJECTED') {
-        
-        console.log('🚫 User rejected transaction');
-        toast({
-          title: 'Transaction Cancelled',
-          description: 'You cancelled the transaction. Try again when ready.',
-          variant: 'default'
-        });
-        return;
-      }
-      
-      // Check if it's an insufficient funds error
+      // Check if it's an insufficient funds error (prioritize this check)
       if (error?.message?.includes('insufficient') || 
           error?.code === 'INSUFFICIENT_FUNDS' ||
           error?.message?.includes('gas') ||
           error?.message?.includes('balance') ||
-          error?.reason?.includes('insufficient')) {
+          error?.reason?.includes('insufficient') ||
+          error?.message?.includes('exceeds balance') ||
+          error?.shortMessage?.includes('insufficient')) {
         
         console.log('💰 Insufficient funds detected - starting demo mode');
         // Show fallback demo mint for MVP
@@ -301,6 +287,53 @@ export const useNFTMinting = () => {
           setTimeout(() => navigate('/dashboard'), 2000);
         }, 3000);
         
+        return;
+      }
+      
+      // Check if user rejected the transaction (but not due to insufficient funds)
+      if (error?.code === 4001 || 
+          error?.message?.includes('User rejected') ||
+          error?.message?.includes('rejected') ||
+          error?.message?.includes('denied by the user') ||
+          error?.code === 'ACTION_REJECTED') {
+        
+        console.log('🚫 User rejected transaction');
+        
+        // If likely rejected due to insufficient funds, show demo mode
+        if (error?.message?.toLowerCase().includes('insufficient') ||
+            error?.message?.toLowerCase().includes('balance') ||
+            error?.message?.toLowerCase().includes('gas')) {
+          
+          console.log('💰 User rejection likely due to insufficient funds - starting demo mode');
+          toast({
+            title: 'Demo Mode - Insufficient Funds',
+            description: 'Simulating NFT mint process for demonstration purposes.',
+            variant: 'default'
+          });
+          
+          setIsMintingDemo(true);
+          
+          setTimeout(() => {
+            setIsMintingDemo(false);
+            setDemoMintSuccess(true);
+            
+            toast({
+              title: 'Demo NFT "Minted" Successfully!',
+              description: 'This is a demonstration. Connect wallet with sufficient funds for real minting.',
+            });
+            
+            setTimeout(() => navigate('/dashboard'), 2000);
+          }, 3000);
+          
+          return;
+        }
+        
+        // Regular user cancellation
+        toast({
+          title: 'Transaction Cancelled',
+          description: 'You cancelled the transaction. Try again when ready.',
+          variant: 'default'
+        });
         return;
       }
       
