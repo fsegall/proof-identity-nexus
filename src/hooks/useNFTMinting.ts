@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Canvas as FabricCanvas, FabricImage } from 'fabric';
 
 export const useNFTMinting = () => {
   const navigate = useNavigate();
@@ -61,31 +60,49 @@ export const useNFTMinting = () => {
     }
   };
 
-  const applyFilter = (canvas: FabricCanvas, style: string) => {
-    const canvasEl = canvas.getElement();
-    const ctx = canvasEl.getContext('2d');
-    if (!ctx) return;
-
-    switch (style) {
-      case 'cyberpunk':
-        // Neon glow effect
-        canvasEl.style.filter = 'contrast(1.3) brightness(1.2) hue-rotate(200deg) saturate(1.5)';
-        break;
-      case 'fantasy':
-        // Warm vintage effect  
-        canvasEl.style.filter = 'sepia(0.3) contrast(1.2) brightness(1.1) saturate(1.4)';
-        break;
-      case 'artistic':
-        // Oil painting effect
-        canvasEl.style.filter = 'contrast(1.5) saturate(1.8) blur(0.5px)';
-        break;
-      case 'minimal':
-        // Clean monochrome
-        canvasEl.style.filter = 'grayscale(0.7) contrast(1.3) brightness(1.1)';
-        break;
-      default:
-        canvasEl.style.filter = 'none';
+  const applyStyleToCanvas = (ctx: CanvasRenderingContext2D, imageData: ImageData, style: string) => {
+    const data = imageData.data;
+    
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      
+      switch (style) {
+        case 'cyberpunk':
+          // Neon cyberpunk effect
+          data[i] = Math.min(255, r * 1.3 + 50);     // More red
+          data[i + 1] = Math.min(255, g * 1.1 + 30); // Slightly more green
+          data[i + 2] = Math.min(255, b * 1.5 + 80); // Much more blue
+          break;
+          
+        case 'fantasy':
+          // Warm vintage sepia effect
+          data[i] = Math.min(255, (r * 0.393) + (g * 0.769) + (b * 0.189));
+          data[i + 1] = Math.min(255, (r * 0.349) + (g * 0.686) + (b * 0.168));
+          data[i + 2] = Math.min(255, (r * 0.272) + (g * 0.534) + (b * 0.131));
+          break;
+          
+        case 'artistic':
+          // Enhanced contrast and saturation
+          const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+          const factor = 1.8; // Saturation factor
+          data[i] = Math.min(255, gray + factor * (r - gray));
+          data[i + 1] = Math.min(255, gray + factor * (g - gray));
+          data[i + 2] = Math.min(255, gray + factor * (b - gray));
+          break;
+          
+        case 'minimal':
+          // Grayscale with enhanced contrast
+          const grayValue = Math.min(255, (0.299 * r + 0.587 * g + 0.114 * b) * 1.3);
+          data[i] = grayValue;
+          data[i + 1] = grayValue;
+          data[i + 2] = grayValue;
+          break;
+      }
     }
+    
+    return imageData;
   };
 
   const generateStyledAvatar = async (style: string) => {
@@ -126,25 +143,21 @@ export const useNFTMinting = () => {
           tempCanvas.height = img.height;
           tempCtx.drawImage(img, 0, 0);
           
-          // Create Fabric canvas for filters
-          const fabricCanvas = new FabricCanvas(tempCanvas);
+          // Get image data for pixel manipulation
+          const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
           
           // Apply the selected filter
-          applyFilter(fabricCanvas, style);
+          const filteredImageData = applyStyleToCanvas(tempCtx, imageData, style);
+          
+          // Put the filtered data back
+          tempCtx.putImageData(filteredImageData, 0, 0);
           
           // Get the styled image as data URL
-          setTimeout(() => {
-            const styledImageData = fabricCanvas.toDataURL({
-              format: 'png',
-              quality: 0.9,
-              multiplier: 1
-            });
-            
-            setStyledAvatar(styledImageData);
-            console.log('✅ Styled avatar set:', styledImageData.substring(0, 50) + '...');
-            fabricCanvas.dispose();
-            resolve(styledImageData);
-          }, 100);
+          const styledImageData = tempCanvas.toDataURL('image/png', 0.9);
+          
+          setStyledAvatar(styledImageData);
+          console.log('✅ Styled avatar set:', styledImageData.substring(0, 50) + '...');
+          resolve(styledImageData);
         };
         
         img.onerror = () => reject(new Error('Failed to load image'));
