@@ -36,20 +36,50 @@ serve(async (req) => {
     let imageGenerationPayload;
 
     if (photoFile) {
-      // Convert uploaded photo to base64
-      const photoBuffer = await photoFile.arrayBuffer();
-      const photoBase64 = btoa(String.fromCharCode(...new Uint8Array(photoBuffer)));
+      // Use DALL-E 2 image variations endpoint with uploaded photo
+      const editPrompt = `Create an avatar with the following style: ${prompt}. Make it artistic and stylized while maintaining the person's key facial features.`;
       
-      // Use DALL-E 2 for image variations based on uploaded photo
-      const editPrompt = `Create an avatar based on this person with the following style: ${prompt}. Make it artistic and stylized while maintaining the person's key facial features.`;
+      const formDataForAPI = new FormData();
+      formDataForAPI.append('image', photoFile);
+      formDataForAPI.append('prompt', editPrompt);
+      formDataForAPI.append('n', '1');
+      formDataForAPI.append('size', '512x512');
+      formDataForAPI.append('response_format', 'b64_json');
+
+      const response = await fetch('https://api.openai.com/v1/images/variations', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+        },
+        body: formDataForAPI,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('OpenAI API error:', errorData);
+        throw new Error(`OpenAI API error: ${errorData.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
       
-      imageGenerationPayload = {
-        model: 'dall-e-2',
-        prompt: editPrompt,
-        n: 1,
-        size: '512x512',
-        response_format: 'b64_json'
-      };
+      if (!data.data || !data.data[0] || !data.data[0].b64_json) {
+        throw new Error('No image data received from OpenAI');
+      }
+
+      const imageBase64 = data.data[0].b64_json;
+      const imageDataUrl = `data:image/png;base64,${imageBase64}`;
+
+      console.log('Image variation generated successfully');
+
+      return new Response(
+        JSON.stringify({ 
+          image: imageDataUrl,
+          revised_prompt: prompt
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     } else {
       // Use DALL-E 3 for generating from text prompt only
       imageGenerationPayload = {
