@@ -81,6 +81,8 @@ serve(async (req) => {
       formDataForAPI.append('size', '1024x1024');
       formDataForAPI.append('response_format', 'b64_json');
 
+      console.log('Making request to OpenAI variations endpoint...');
+      
       const response = await fetch('https://api.openai.com/v1/images/variations', {
         method: 'POST',
         headers: {
@@ -89,16 +91,44 @@ serve(async (req) => {
         body: formDataForAPI,
       });
 
+      console.log('OpenAI response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('OpenAI API error:', errorData);
-        throw new Error(`OpenAI API error: ${errorData.error?.message || response.statusText}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.error('OpenAI API error response:', errorData);
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          errorData = { error: { message: response.statusText } };
+        }
+        
+        return new Response(
+          JSON.stringify({ 
+            error: 'Failed to generate image', 
+            details: errorData.error?.message || response.statusText 
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       const data = await response.json();
+      console.log('OpenAI response data keys:', Object.keys(data));
       
       if (!data.data || !data.data[0] || !data.data[0].b64_json) {
-        throw new Error('No image data received from OpenAI');
+        console.error('Invalid response structure:', data);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Invalid response from image generation service' 
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
 
       const imageBase64 = data.data[0].b64_json;
