@@ -17,6 +17,7 @@ serve(async (req) => {
 
   try {
     if (!openAIApiKey) {
+      console.error('OpenAI API key not configured');
       throw new Error('OpenAI API key not configured');
     }
 
@@ -24,7 +25,15 @@ serve(async (req) => {
     const prompt = formData.get('prompt') as string;
     const photoFile = formData.get('photo') as File | null;
 
+    console.log('Received request:', { 
+      hasPrompt: !!prompt, 
+      hasPhoto: !!photoFile,
+      photoSize: photoFile?.size,
+      photoType: photoFile?.type
+    });
+
     if (!prompt) {
+      console.error('No prompt provided');
       return new Response(
         JSON.stringify({ error: 'Prompt is required' }),
         { 
@@ -35,8 +44,36 @@ serve(async (req) => {
     }
 
     if (photoFile) {
-      // Use DALL-E 2 variations endpoint - only needs the image, no prompt
-      console.log('Using DALL-E 2 variations endpoint to stylize photo');
+      console.log('Processing photo with DALL-E 2 variations endpoint');
+      console.log('Photo details:', {
+        size: photoFile.size,
+        type: photoFile.type,
+        name: photoFile.name
+      });
+
+      // Check file size (4MB limit for OpenAI)
+      if (photoFile.size > 4 * 1024 * 1024) {
+        console.error('File too large:', photoFile.size);
+        return new Response(
+          JSON.stringify({ error: 'Photo must be less than 4MB' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Check file type (must be PNG for variations endpoint)
+      if (!photoFile.type.includes('png') && !photoFile.type.includes('image')) {
+        console.error('Invalid file type:', photoFile.type);
+        return new Response(
+          JSON.stringify({ error: 'Photo must be a PNG image' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
       
       const formDataForAPI = new FormData();
       formDataForAPI.append('image', photoFile);
