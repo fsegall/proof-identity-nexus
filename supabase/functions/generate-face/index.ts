@@ -26,9 +26,15 @@ serve(async (req) => {
       hasPhoto: !!photoFile,
       photoSize: photoFile?.size,
       photoType: photoFile?.type,
-      hasHuggingFaceToken: !!huggingFaceToken
+      hasHuggingFaceToken: !!huggingFaceToken,
+      huggingFaceTokenLength: huggingFaceToken?.length
     });
 
+    console.log('=== DEBUGGING TOKEN ===');
+    console.log('HF Token exists:', !!huggingFaceToken);
+    console.log('HF Token length:', huggingFaceToken?.length);
+    console.log('Photo file exists:', !!photoFile);
+    
     if (!prompt) {
       return new Response(
         JSON.stringify({ error: 'Prompt is required' }),
@@ -38,6 +44,11 @@ serve(async (req) => {
         }
       );
     }
+
+    console.log('=== VERIFICANDO CONDIÇÕES PARA IMG2IMG ===');
+    console.log('Tem foto:', !!photoFile);
+    console.log('Tem token HF:', !!huggingFaceToken);
+    console.log('Vai usar img2img:', !!(photoFile && huggingFaceToken));
 
     // 🎯 STABLE DIFFUSION IMG2IMG - A SOLUÇÃO REAL!
     if (photoFile && huggingFaceToken) {
