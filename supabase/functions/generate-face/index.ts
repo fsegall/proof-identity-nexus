@@ -66,7 +66,7 @@ serve(async (req) => {
         console.log('Prompt usado:', enhancedPrompt);
         
         const response = await fetch(
-          "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+          "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix",
           {
             headers: {
               Authorization: `Bearer ${huggingFaceToken}`,
@@ -124,7 +124,7 @@ serve(async (req) => {
             await new Promise(resolve => setTimeout(resolve, 20000));
             
             const retryResponse = await fetch(
-              "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+              "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix",
               {
                 headers: {
                   Authorization: `Bearer ${huggingFaceToken}`,
