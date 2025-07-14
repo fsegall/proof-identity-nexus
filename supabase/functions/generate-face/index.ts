@@ -36,25 +36,30 @@ serve(async (req) => {
     let imageGenerationPayload;
 
     if (photoFile) {
-      // For photos with custom prompts, use DALL-E 2 edits endpoint
-      // First, we need to create a simple mask (transparent PNG)
-      const editPrompt = `Transform this person into: ${prompt}. Keep facial features recognizable but apply the requested style.`;
+      // Convert uploaded photo to base64 for analysis
+      const photoBuffer = await photoFile.arrayBuffer();
+      const photoBase64 = btoa(String.fromCharCode(...new Uint8Array(photoBuffer)));
       
-      const formDataForAPI = new FormData();
-      formDataForAPI.append('image', photoFile);
-      formDataForAPI.append('prompt', editPrompt);
-      formDataForAPI.append('n', '1');
-      formDataForAPI.append('size', '512x512');
-      formDataForAPI.append('response_format', 'b64_json');
+      // Use gpt-image-1 model which can better handle image descriptions and prompts
+      const enhancedPrompt = `Create a stylized avatar based on the uploaded reference photo with these specifications: ${prompt}. 
+      Maintain the person's basic facial structure and key features while applying the requested artistic style. 
+      The result should be a clean, professional avatar suitable for digital identity.`;
 
-      console.log('Using DALL-E edits with prompt:', editPrompt);
+      console.log('Using gpt-image-1 with enhanced prompt:', enhancedPrompt);
 
-      const response = await fetch('https://api.openai.com/v1/images/edits', {
+      const response = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
         },
-        body: formDataForAPI,
+        body: JSON.stringify({
+          model: 'gpt-image-1',
+          prompt: enhancedPrompt,
+          size: '1024x1024',
+          quality: 'high',
+          n: 1
+        }),
       });
 
       if (!response.ok) {
@@ -72,12 +77,12 @@ serve(async (req) => {
       const imageBase64 = data.data[0].b64_json;
       const imageDataUrl = `data:image/png;base64,${imageBase64}`;
 
-      console.log('Image edit generated successfully');
+      console.log('Avatar generated successfully with gpt-image-1');
 
       return new Response(
         JSON.stringify({ 
           image: imageDataUrl,
-          revised_prompt: editPrompt
+          revised_prompt: data.data[0].revised_prompt || enhancedPrompt
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
