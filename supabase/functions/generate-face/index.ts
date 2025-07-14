@@ -66,7 +66,7 @@ serve(async (req) => {
         console.log('Prompt usado:', enhancedPrompt);
         
         const response = await fetch(
-          "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix",
+          "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
           {
             headers: {
               Authorization: `Bearer ${huggingFaceToken}`,
@@ -77,7 +77,7 @@ serve(async (req) => {
               inputs: enhancedPrompt,
               parameters: {
                 // img2img specific parameters
-                init_image: base64Image,
+                image: base64Image,
                 strength: 0.9, // AUMENTADO: Preserva mais características da foto original
                 guidance_scale: 7.5, // How closely to follow the prompt
                 num_inference_steps: 50, // Quality vs speed
@@ -124,7 +124,7 @@ serve(async (req) => {
             await new Promise(resolve => setTimeout(resolve, 20000));
             
             const retryResponse = await fetch(
-              "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix",
+              "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
               {
                 headers: {
                   Authorization: `Bearer ${huggingFaceToken}`,
@@ -134,7 +134,7 @@ serve(async (req) => {
                 body: JSON.stringify({
                   inputs: enhancedPrompt,
                   parameters: {
-                    init_image: base64Image,
+                    image: base64Image,
                     strength: 0.9, // AUMENTADO: Mesmo valor para retry
                     guidance_scale: 7.5,
                     num_inference_steps: 50,
