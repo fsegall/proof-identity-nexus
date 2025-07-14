@@ -1,8 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const huggingFaceToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,7 +10,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -26,7 +25,8 @@ serve(async (req) => {
       hasPrompt: !!prompt, 
       hasPhoto: !!photoFile,
       photoSize: photoFile?.size,
-      photoType: photoFile?.type
+      photoType: photoFile?.type,
+      hasHuggingFaceToken: !!huggingFaceToken
     });
 
     if (!prompt) {
@@ -39,53 +39,140 @@ serve(async (req) => {
       );
     }
 
+    // 🎯 STABLE DIFFUSION IMG2IMG - A SOLUÇÃO REAL!
     if (photoFile && huggingFaceToken) {
-      console.log('=== USANDO SUA IMAGEM REAL com Hugging Face ===');
+      console.log('🎨 USANDO STABLE DIFFUSION IMG2IMG - SUA FOTO REAL!');
       
-      // Use the actual uploaded image with Hugging Face
-      const imageBytes = await photoFile.arrayBuffer();
-      
-      const response = await fetch(
-        "https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix",
-        {
-          headers: {
-            Authorization: `Bearer ${huggingFaceToken}`,
-            "Content-Type": "application/json",
-          },
-          method: "POST",
-          body: JSON.stringify({
-            inputs: {
-              image: Array.from(new Uint8Array(imageBytes)),
-              prompt: `Transform this person: ${prompt}. Keep the person's face recognizable but apply the styling requested.`
-            }
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const result = await response.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(result)));
+      try {
+        // Convert image to base64
+        const imageBytes = await photoFile.arrayBuffer();
+        const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBytes)));
         
-        console.log('Imagem transformada usando SUA FOTO como base!');
+        // Enhanced prompt for better img2img results
+        const enhancedPrompt = `${prompt}, high quality portrait, detailed facial features, professional photography, ultra realistic, 8k resolution`;
         
-        return new Response(
-          JSON.stringify({ 
-            image: `data:image/jpeg;base64,${base64}`,
-            revised_prompt: `Transformed your uploaded image: ${prompt}`
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        console.log('Enviando para Stable Diffusion img2img...');
+        console.log('Prompt usado:', enhancedPrompt);
+        
+        const response = await fetch(
+          "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+          {
+            headers: {
+              Authorization: `Bearer ${huggingFaceToken}`,
+              "Content-Type": "application/json",
+            },
+            method: "POST",
+            body: JSON.stringify({
+              inputs: enhancedPrompt,
+              parameters: {
+                // img2img specific parameters
+                init_image: base64Image,
+                strength: 0.7, // Controls how much to change (0.1 = subtle, 0.9 = dramatic)
+                guidance_scale: 7.5, // How closely to follow the prompt
+                num_inference_steps: 50, // Quality vs speed
+                width: 512,
+                height: 512
+              },
+              options: {
+                wait_for_model: true,
+                use_cache: false
+              }
+            }),
           }
         );
-      } else {
-        console.log('Hugging Face falhou, usando fallback com OpenAI...');
+
+        console.log('Stable Diffusion response status:', response.status);
+
+        if (response.ok) {
+          const result = await response.arrayBuffer();
+          const resultBase64 = btoa(String.fromCharCode(...new Uint8Array(result)));
+          
+          console.log('✅ SUCCESS: Stable Diffusion img2img processou sua foto!');
+          console.log('Tamanho da imagem resultado:', result.byteLength, 'bytes');
+          
+          return new Response(
+            JSON.stringify({ 
+              image: `data:image/jpeg;base64,${resultBase64}`,
+              revised_prompt: `IMG2IMG: ${enhancedPrompt}`,
+              method: 'stable-diffusion-img2img',
+              source: 'your-uploaded-photo'
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        } else {
+          const errorText = await response.text();
+          console.error('Stable Diffusion API error:', errorText);
+          
+          // Check if it's a loading error
+          if (errorText.includes('loading') || errorText.includes('currently loading')) {
+            console.log('Modelo ainda carregando, tentando novamente...');
+            
+            // Wait a bit and try again
+            await new Promise(resolve => setTimeout(resolve, 20000));
+            
+            const retryResponse = await fetch(
+              "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+              {
+                headers: {
+                  Authorization: `Bearer ${huggingFaceToken}`,
+                  "Content-Type": "application/json",
+                },
+                method: "POST",
+                body: JSON.stringify({
+                  inputs: enhancedPrompt,
+                  parameters: {
+                    init_image: base64Image,
+                    strength: 0.7,
+                    guidance_scale: 7.5,
+                    num_inference_steps: 50,
+                    width: 512,
+                    height: 512
+                  },
+                  options: {
+                    wait_for_model: true,
+                    use_cache: false
+                  }
+                }),
+              }
+            );
+            
+            if (retryResponse.ok) {
+              const retryResult = await retryResponse.arrayBuffer();
+              const retryBase64 = btoa(String.fromCharCode(...new Uint8Array(retryResult)));
+              
+              console.log('✅ SUCCESS na segunda tentativa!');
+              
+              return new Response(
+                JSON.stringify({ 
+                  image: `data:image/jpeg;base64,${retryBase64}`,
+                  revised_prompt: `IMG2IMG (retry): ${enhancedPrompt}`,
+                  method: 'stable-diffusion-img2img-retry',
+                  source: 'your-uploaded-photo'
+                }),
+                { 
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+                }
+              );
+            }
+          }
+          
+          console.log('Stable Diffusion falhou, usando fallback...');
+        }
+      } catch (img2imgError) {
+        console.error('Erro no img2img:', img2imgError);
+        console.log('Tentando fallback para OpenAI...');
       }
     }
 
-    // Fallback to OpenAI text generation
+    // Fallback to OpenAI for text-only or when Hugging Face fails
     if (!openAIApiKey) {
       return new Response(
-        JSON.stringify({ error: 'API keys not configured' }),
+        JSON.stringify({ 
+          error: 'Configuração necessária',
+          details: 'Configure o token do Hugging Face para usar sua foto real, ou OpenAI para geração de texto.'
+        }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -93,16 +180,11 @@ serve(async (req) => {
       );
     }
 
-    let finalPrompt = prompt;
+    console.log('🔄 Usando OpenAI como fallback...');
     
-    if (photoFile) {
-      console.log('=== MODO FALLBACK: Criando avatar inspirado na sua descrição ===');
-      finalPrompt = `Create a stylized portrait avatar inspired by: ${prompt}. 
-      Professional digital art, clean modern styling suitable for profile picture.
-      Make it realistic but artistic, with attention to facial features.`;
-    } else {
-      finalPrompt = `Create a stylized avatar portrait: ${prompt}. Professional, clean styling.`;
-    }
+    const finalPrompt = photoFile 
+      ? `Create a stylized portrait avatar inspired by: ${prompt}. Professional digital art, realistic but artistic.`
+      : `Create a stylized avatar portrait: ${prompt}. Professional, clean styling.`;
 
     const imageGenerationPayload = {
       model: 'dall-e-3',
@@ -141,12 +223,14 @@ serve(async (req) => {
     const imageBase64 = data.data[0].b64_json;
     const imageDataUrl = `data:image/png;base64,${imageBase64}`;
 
-    console.log('Avatar gerado com sucesso');
+    console.log('Avatar gerado com OpenAI (fallback)');
 
     return new Response(
       JSON.stringify({ 
         image: imageDataUrl,
-        revised_prompt: data.data[0].revised_prompt || finalPrompt
+        revised_prompt: data.data[0].revised_prompt || finalPrompt,
+        method: 'openai-fallback',
+        source: photoFile ? 'text-inspired-by-photo' : 'text-only'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

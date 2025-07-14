@@ -73,36 +73,14 @@ export const useNFTMinting = () => {
       console.log('Prompt:', prompt);
       console.log('Photo file:', !!photoFile);
       
-      // If photo is provided, process it locally first
       if (photoFile) {
-        console.log('🎨 PROCESSANDO SUA IMAGEM LOCALMENTE...');
-        setGenerationProgress('Processando sua imagem...');
-        
-        try {
-          // Import the image processing function
-          const { processImageWithStyle } = await import('@/lib/imageProcessing');
-          
-          // Process the image with the style prompt
-          const processedImage = await processImageWithStyle(photoFile, prompt);
-          
-          console.log('✅ SUA IMAGEM FOI PROCESSADA COM SUCESSO!');
-          setAvatarPreview(processedImage);
-          setGenerationProgress('Complete!');
-          
-          toast({
-            title: 'Sua Imagem Foi Transformada!',
-            description: 'Sua foto foi processada e estilizada conforme solicitado. Você pode ver que usamos sua imagem real!',
-          });
-          
-          return;
-        } catch (imageError) {
-          console.error('Erro no processamento local da imagem:', imageError);
-          setGenerationProgress('Processamento local falhou, tentando servidor...');
-          // Continue with server-side generation as fallback
-        }
+        console.log('🎯 USANDO STABLE DIFFUSION IMG2IMG - SUA FOTO REAL!');
+        setGenerationProgress('Processando sua foto com Stable Diffusion img2img...');
+      } else {
+        setGenerationProgress('Gerando avatar com IA...');
       }
       
-      // Server-side generation (fallback or text-only)
+      // Create FormData for the request
       const formData = new FormData();
       formData.append('prompt', prompt);
       if (photoFile) {
@@ -113,7 +91,7 @@ export const useNFTMinting = () => {
         body: formData
       });
       
-      setGenerationProgress('Processing image...');
+      setGenerationProgress('Processando resultado...');
 
       console.log('Face generation response:', { data, error });
 
@@ -124,7 +102,7 @@ export const useNFTMinting = () => {
         let errorMessage = 'Failed to generate face.';
         
         if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
-          errorMessage = 'API authentication failed. Please check if your Hugging Face token is configured.';
+          errorMessage = 'Configure seu token do Hugging Face para usar sua foto real!';
         } else if (error.message?.includes('timeout') || error.message?.includes('408')) {
           errorMessage = 'Generation took too long. Try again or simplify your prompt.';
         } else if (error.message?.includes('rate limit') || error.message?.includes('429')) {
@@ -136,14 +114,30 @@ export const useNFTMinting = () => {
 
       if (data?.image) {
         console.log('✅ Successfully generated avatar');
+        console.log('Method used:', data.method);
+        console.log('Source:', data.source);
+        
         setAvatarPreview(data.image);
         setGenerationProgress('Complete!');
         
+        // Different messages based on method used
+        let title = 'Avatar Generated Successfully!';
+        let description = 'Your AI avatar has been created successfully.';
+        
+        if (data.method === 'stable-diffusion-img2img') {
+          title = '🎯 SUA FOTO FOI TRANSFORMADA!';
+          description = 'Stable Diffusion img2img processou sua foto real e aplicou o estilo solicitado!';
+        } else if (data.method === 'stable-diffusion-img2img-retry') {
+          title = '🎯 SUA FOTO FOI TRANSFORMADA! (2ª tentativa)';
+          description = 'Stable Diffusion img2img processou sua foto real após recarregar o modelo!';
+        } else if (photoFile && data.method === 'openai-fallback') {
+          title = '📝 Avatar Inspirado na Sua Foto';
+          description = 'OpenAI criou um avatar inspirado na sua descrição (fallback). Configure o token Hugging Face para usar sua foto real!';
+        }
+        
         toast({
-          title: 'Avatar Generated Successfully!',
-          description: photoFile 
-            ? 'Your personalized AI avatar has been created successfully.' 
-            : 'Your AI avatar has been created successfully.',
+          title,
+          description,
         });
       } else {
         throw new Error('No image was returned from the AI service');
