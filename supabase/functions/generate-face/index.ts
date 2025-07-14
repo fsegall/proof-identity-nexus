@@ -36,8 +36,9 @@ serve(async (req) => {
     let imageGenerationPayload;
 
     if (photoFile) {
-      // Use DALL-E 2 image variations endpoint with uploaded photo
-      const editPrompt = `Create an avatar with the following style: ${prompt}. Make it artistic and stylized while maintaining the person's key facial features.`;
+      // For photos with custom prompts, use DALL-E 2 edits endpoint
+      // First, we need to create a simple mask (transparent PNG)
+      const editPrompt = `Transform this person into: ${prompt}. Keep facial features recognizable but apply the requested style.`;
       
       const formDataForAPI = new FormData();
       formDataForAPI.append('image', photoFile);
@@ -46,7 +47,9 @@ serve(async (req) => {
       formDataForAPI.append('size', '512x512');
       formDataForAPI.append('response_format', 'b64_json');
 
-      const response = await fetch('https://api.openai.com/v1/images/variations', {
+      console.log('Using DALL-E edits with prompt:', editPrompt);
+
+      const response = await fetch('https://api.openai.com/v1/images/edits', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openAIApiKey}`,
@@ -69,12 +72,12 @@ serve(async (req) => {
       const imageBase64 = data.data[0].b64_json;
       const imageDataUrl = `data:image/png;base64,${imageBase64}`;
 
-      console.log('Image variation generated successfully');
+      console.log('Image edit generated successfully');
 
       return new Response(
         JSON.stringify({ 
           image: imageDataUrl,
-          revised_prompt: prompt
+          revised_prompt: editPrompt
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
