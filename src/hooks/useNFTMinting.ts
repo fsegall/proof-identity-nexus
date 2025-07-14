@@ -64,16 +64,27 @@ export const useNFTMinting = () => {
     updateUserAvatar();
   }, [isSuccess, hash, styledAvatar, user?.id, toast, navigate]);
 
-  const generateFace = async (prompt: string) => {
+  const generateFace = async (prompt: string, photoFile?: File) => {
     setIsGeneratingFace(true);
+    setGenerationProgress('Starting generation...');
     
     try {
-      console.log('=== STARTING FACE GENERATION ===');
+      console.log('=== STARTING AVATAR GENERATION ===');
       console.log('Prompt:', prompt);
+      console.log('Photo file:', !!photoFile);
+      
+      // Create FormData for the request
+      const formData = new FormData();
+      formData.append('prompt', prompt);
+      if (photoFile) {
+        formData.append('photo', photoFile);
+      }
       
       const { data, error } = await supabase.functions.invoke('generate-face', {
-        body: { prompt }
+        body: formData
       });
+      
+      setGenerationProgress('Processing image...');
 
       console.log('Face generation response:', { data, error });
 
@@ -95,27 +106,35 @@ export const useNFTMinting = () => {
       }
 
       if (data?.image) {
-        console.log('✅ Successfully generated face');
+        console.log('✅ Successfully generated avatar');
         setAvatarPreview(data.image);
+        setGenerationProgress('Complete!');
         
         toast({
-          title: 'Face Generated Successfully!',
-          description: `Your AI-generated face is ready for styling.`
+          title: 'Avatar Generated Successfully!',
+          description: photoFile 
+            ? 'Your personalized AI avatar has been created successfully.' 
+            : 'Your AI avatar has been created successfully.',
         });
       } else {
         throw new Error('No image was returned from the AI service');
       }
       
     } catch (error) {
-      console.error('=== FACE GENERATION ERROR ===');
-      console.error('Error:', error);
+      console.error('=== AVATAR GENERATION ERROR ===');
+      console.error('Error details:', error);
+      
       toast({
-        title: 'Face Generation Failed',
-        description: error.message || 'Failed to generate face. Please try again.',
-        variant: 'destructive'
+        title: 'Generation Failed',
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        variant: 'destructive',
       });
+      
+      setAvatarPreview(null);
     } finally {
+      console.log('=== AVATAR GENERATION COMPLETE ===');
       setIsGeneratingFace(false);
+      setGenerationProgress('');
     }
   };
 
