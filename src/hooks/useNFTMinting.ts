@@ -73,7 +73,36 @@ export const useNFTMinting = () => {
       console.log('Prompt:', prompt);
       console.log('Photo file:', !!photoFile);
       
-      // Create FormData for the request
+      // If photo is provided, process it locally first
+      if (photoFile) {
+        console.log('🎨 PROCESSANDO SUA IMAGEM LOCALMENTE...');
+        setGenerationProgress('Processando sua imagem...');
+        
+        try {
+          // Import the image processing function
+          const { processImageWithStyle } = await import('@/lib/imageProcessing');
+          
+          // Process the image with the style prompt
+          const processedImage = await processImageWithStyle(photoFile, prompt);
+          
+          console.log('✅ SUA IMAGEM FOI PROCESSADA COM SUCESSO!');
+          setAvatarPreview(processedImage);
+          setGenerationProgress('Complete!');
+          
+          toast({
+            title: 'Sua Imagem Foi Transformada!',
+            description: 'Sua foto foi processada e estilizada conforme solicitado. Você pode ver que usamos sua imagem real!',
+          });
+          
+          return;
+        } catch (imageError) {
+          console.error('Erro no processamento local da imagem:', imageError);
+          setGenerationProgress('Processamento local falhou, tentando servidor...');
+          // Continue with server-side generation as fallback
+        }
+      }
+      
+      // Server-side generation (fallback or text-only)
       const formData = new FormData();
       formData.append('prompt', prompt);
       if (photoFile) {
