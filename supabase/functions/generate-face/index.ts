@@ -67,7 +67,7 @@ serve(async (req) => {
               parameters: {
                 // img2img specific parameters
                 init_image: base64Image,
-                strength: 0.7, // Controls how much to change (0.1 = subtle, 0.9 = dramatic)
+                strength: 0.9, // AUMENTADO: Preserva mais características da foto original
                 guidance_scale: 7.5, // How closely to follow the prompt
                 num_inference_steps: 50, // Quality vs speed
                 width: 512,
@@ -124,7 +124,7 @@ serve(async (req) => {
                   inputs: enhancedPrompt,
                   parameters: {
                     init_image: base64Image,
-                    strength: 0.7,
+                    strength: 0.9, // AUMENTADO: Mesmo valor para retry
                     guidance_scale: 7.5,
                     num_inference_steps: 50,
                     width: 512,
